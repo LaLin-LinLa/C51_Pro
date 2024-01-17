@@ -1,0 +1,599 @@
+C51 COMPILER V9.59.0.0   MAIN                                                              02/26/2022 13:58:31 PAGE 1   
+
+
+C51 COMPILER V9.59.0.0, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\Objects\main.obj
+COMPILER INVOKED BY: E:\Keil5_v5\C51\BIN\C51.EXE main.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listings\mai
+                    -n.lst) TABS(2) OBJECT(.\Objects\main.obj)
+
+line level    source
+
+   1          #include <STC15F2K60S2.H>
+   2          #include "iic.h"
+   3          
+   4          sbit S7=P3^0;
+   5          sbit S6=P3^1;
+   6          sbit S5=P3^2;
+   7          sbit S4=P3^3;
+   8          
+   9          unsigned char dat_rb2;                                      //保存电位器Rb2的电压
+  10          unsigned char dat_led=0;
+  11          unsigned char stat=0;                                       //彩灯当前状态
+  12          unsigned char mode =1;                                      //彩灯工作模式
+  13          unsigned char mode_s6=1;                                    //彩灯设置模式
+  14          unsigned char level=0;                                      //彩灯亮度等级
+  15          unsigned int count_t800=0;                                  //0.08秒间隔计数
+  16          unsigned int count=0;
+  17          unsigned int time_m[4];                                     //四个模式流转间隔数组
+  18          unsigned char pwm_duty=20;                                  //pwm脉宽
+  19          unsigned int t_pwm;
+  20          unsigned char f_open=0;                                     //启动与停止
+  21          unsigned char f_set=0;                                      //S6状态切换变量
+  22          unsigned char f_t800=0;                                     //模式选择界面闪烁间隔
+  23          unsigned char code SMG_D[]={0xc0,0xf9,0xa4,0xb0,0x99,0x92,0x82,0xf8,0x80,0x90,
+  24                                      0xbf};  //10 -                
+  25          
+  26          void LED_Working();
+  27          
+  28          /*==================系统初始化函数====================*/
+  29          void SelectHC573(unsigned char channel)
+  30          {
+  31   1        switch(channel)
+  32   1        {
+  33   2          case 4:
+  34   2            P2=(P2&0x1f)|0x80;
+  35   2          break;
+  36   2          case 5:
+  37   2            P2=(P2&0x1f)|0xa0;
+  38   2          break;
+  39   2          case 6:
+  40   2            P2=(P2&0x1f)|0xc0;
+  41   2          break;
+  42   2          case 7:
+  43   2            P2=(P2&0x1f)|0xe0;
+  44   2          break;
+  45   2          case 0:
+  46   2            P2=(P2&0x1f)|0x00;
+  47   2          break;
+  48   2        }
+  49   1      }
+  50          /*==================延时函数====================*/
+  51          void Delayms(unsigned int t)
+  52          {
+  53   1        while(t--);
+  54   1        while(t--);
+C51 COMPILER V9.59.0.0   MAIN                                                              02/26/2022 13:58:31 PAGE 2   
+
+  55   1      }
+  56          
+  57          void Delayus(unsigned int t)
+  58          {
+  59   1        while(t--);
+  60   1      }
+  61          
+  62          /*==================显示单位数码管函数====================*/
+  63          void DisplaySMG_Bit(unsigned char pos,unsigned char value)
+  64          {
+  65   1        SelectHC573(6);
+  66   1        P0=0x00;
+  67   1        SelectHC573(6);
+  68   1        P0=0x01<<pos;
+  69   1        SelectHC573(7);
+  70   1        P0=value;
+  71   1      }
+  72          /*==================显示全部数码管函数====================*/
+  73          void DisplaySMG_All(unsigned char value)
+  74          {
+  75   1        SelectHC573(6);
+  76   1        P0=0xff;
+  77   1        SelectHC573(7);
+  78   1        P0=value;
+  79   1      }
+  80          /*==================显示彩灯亮度等级函数====================*/
+  81          void DispaySMG_Level()
+  82          {
+  83   1        DisplaySMG_Bit(0,0xff);
+  84   1        DisplaySMG_Bit(1,0xff);
+  85   1        DisplaySMG_Bit(2,0xff);
+  86   1        DisplaySMG_Bit(3,0xff);
+  87   1        DisplaySMG_Bit(4,0xff);
+  88   1        DisplaySMG_Bit(5,0xff);
+  89   1        DisplaySMG_Bit(6,SMG_D[10]);
+  90   1        Delayus(100);
+  91   1        DisplaySMG_Bit(7,SMG_D[level]);
+  92   1        Delayus(100);
+  93   1        DisplaySMG_All(0xff);
+  94   1      }
+  95          /*==================显示运行模式函数====================*/
+  96          void DisplaySMG_MOD()
+  97          {
+  98   1        if(f_t800==0)
+  99   1        {
+ 100   2          DisplaySMG_Bit(0,SMG_D[10]);
+ 101   2          Delayus(100);
+ 102   2          DisplaySMG_Bit(1,SMG_D[mode_s6]);
+ 103   2          Delayus(100);
+ 104   2          DisplaySMG_Bit(2,SMG_D[10]);
+ 105   2          Delayus(100);
+ 106   2        }
+ 107   1        else
+ 108   1        {
+ 109   2          DisplaySMG_Bit(0,SMG_D[10]);
+ 110   2          Delayus(100);
+ 111   2          DisplaySMG_Bit(1,0xff);
+ 112   2          DisplaySMG_Bit(2,SMG_D[10]);
+ 113   2          Delayus(100);
+ 114   2        }
+ 115   1        
+ 116   1        if(time_m[mode_s6-1]/1000!=0)
+C51 COMPILER V9.59.0.0   MAIN                                                              02/26/2022 13:58:31 PAGE 3   
+
+ 117   1        {
+ 118   2          DisplaySMG_Bit(4,SMG_D[time_m[mode_s6-1]/1000]);
+ 119   2          Delayus(100);
+ 120   2        }
+ 121   1        DisplaySMG_Bit(5,SMG_D[(time_m[mode_s6-1]%1000)/100]);
+ 122   1        Delayus(100);
+ 123   1        DisplaySMG_Bit(6,SMG_D[0]);
+ 124   1        Delayus(100);
+ 125   1        DisplaySMG_Bit(7,SMG_D[0]);
+ 126   1        Delayus(100);
+ 127   1        DisplaySMG_All(0xff);
+ 128   1      }
+ 129          /*==================显示流转间隔设置函数====================*/
+ 130          void DisplaySMG_Time()
+ 131          {
+ 132   1        DisplaySMG_Bit(0,SMG_D[10]);
+ 133   1        Delayus(100);
+ 134   1        DisplaySMG_Bit(1,SMG_D[mode_s6]);
+ 135   1        Delayus(100);
+ 136   1        DisplaySMG_Bit(2,SMG_D[10]);
+ 137   1        Delayus(100);
+ 138   1        
+ 139   1        if(f_t800==0)
+ 140   1        {
+ 141   2          if(time_m[mode_s6-1]/1000!=0)
+ 142   2          {
+ 143   3            DisplaySMG_Bit(4,SMG_D[time_m[mode_s6-1]/1000]);
+ 144   3            Delayus(100);
+ 145   3          }
+ 146   2          DisplaySMG_Bit(5,SMG_D[(time_m[mode_s6-1]%1000)/100]);
+ 147   2          Delayus(100);
+ 148   2          DisplaySMG_Bit(6,SMG_D[0]);
+ 149   2          Delayus(100);
+ 150   2          DisplaySMG_Bit(7,SMG_D[0]);
+ 151   2          Delayus(100);
+ 152   2          DisplaySMG_All(0xff);
+ 153   2        }
+ 154   1        else
+ 155   1        {
+ 156   2          DisplaySMG_Bit(4,0xff);
+ 157   2          DisplaySMG_Bit(5,0xff);
+ 158   2          DisplaySMG_Bit(6,0xff);
+ 159   2          DisplaySMG_Bit(7,0xff);
+ 160   2        }
+ 161   1      }
+ 162          /*==================初始化定时器0====================*/
+ 163          void InitTimer0()
+ 164          {
+ 165   1        TMOD=0x01;
+ 166   1        TH0=(65535-1000)/256;
+ 167   1        TL0=(65535-1000)%256;
+ 168   1        ET0=1;
+ 169   1        EA=1;
+ 170   1        TR0=1;
+ 171   1      }
+ 172          /*==================定时器0中断函数====================*/
+ 173          void ServiceTimer0() interrupt 1
+ 174          {
+ 175   1        TH0=(65535-1000)/256;
+ 176   1        TL0=(65535-1000)%256;
+ 177   1        
+ 178   1        count_t800++;
+C51 COMPILER V9.59.0.0   MAIN                                                              02/26/2022 13:58:31 PAGE 4   
+
+ 179   1        if(count_t800==800)
+ 180   1        {
+ 181   2          count_t800=0;
+ 182   2          f_t800= ~f_t800;
+ 183   2        }
+ 184   1        
+ 185   1        t_pwm++;
+ 186   1        if(t_pwm<=pwm_duty)
+ 187   1        {
+ 188   2          SelectHC573(4);
+ 189   2          P0=dat_led;
+ 190   2          SelectHC573(0);
+ 191   2        }
+ 192   1        else if(t_pwm<20) //pwm脉宽处于设定值到20之间，熄灭
+ 193   1        { 
+ 194   2          SelectHC573(4);
+ 195   2          P0=0xff;
+ 196   2          SelectHC573(0);
+ 197   2        }
+ 198   1        else    //t_pwm大于20后重置
+ 199   1        {
+ 200   2          SelectHC573(4);
+ 201   2          P0=dat_led;
+ 202   2          SelectHC573(0);
+ 203   2          t_pwm=0;
+ 204   2          LED_Working();
+ 205   2        }
+ 206   1        
+ 207   1        count++;
+ 208   1        if(count==time_m[mode-1]) 
+ 209   1        {
+ 210   2          count=0;
+ 211   2          if(f_open==1)
+ 212   2            stat++;
+ 213   2          if(stat==25)
+ 214   2            stat=0;
+ 215   2        }
+ 216   1        
+ 217   1      }
+ 218          /*==================8-24C02字节写====================*/
+ 219          void Write_24C02(unsigned char addr,unsigned char dat)
+ 220          {
+ 221   1        IIC_Start();
+ 222   1        IIC_SendByte(0xa0);
+ 223   1        IIC_WaitAck();
+ 224   1        IIC_SendByte(addr);
+ 225   1        IIC_WaitAck();
+ 226   1        IIC_SendByte(dat);
+ 227   1        IIC_WaitAck();
+ 228   1        IIC_Stop();
+ 229   1      }
+ 230          /*==================8-24C02字节读====================*/
+ 231          unsigned char Read_24C02(unsigned char addr)
+ 232          {
+ 233   1        unsigned char tmp;
+ 234   1        IIC_Start();
+ 235   1        IIC_SendByte(0xa0);
+ 236   1        IIC_WaitAck();
+ 237   1        IIC_SendByte(addr);
+ 238   1        IIC_WaitAck();
+ 239   1        
+ 240   1        IIC_Start();
+C51 COMPILER V9.59.0.0   MAIN                                                              02/26/2022 13:58:31 PAGE 5   
+
+ 241   1        IIC_SendByte(0xa1);
+ 242   1        IIC_WaitAck();
+ 243   1        tmp=IIC_RecByte();
+ 244   1        IIC_SendAck(0);
+ 245   1        IIC_Stop();
+ 246   1        return tmp;
+ 247   1      }
+ 248          /*==================PCF8591数据采集====================*/
+ 249           void Read_Rb2()
+ 250           {
+ 251   1        IIC_Start();
+ 252   1        IIC_SendByte(0x90);
+ 253   1        IIC_WaitAck();
+ 254   1        IIC_SendByte(0x03);
+ 255   1        IIC_WaitAck();
+ 256   1        IIC_Stop();
+ 257   1         
+ 258   1        IIC_Start();
+ 259   1        IIC_SendByte(0x91);
+ 260   1        IIC_WaitAck();
+ 261   1        dat_rb2=IIC_RecByte();
+ 262   1        IIC_SendAck(0);
+ 263   1        IIC_Stop();
+ 264   1       }
+ 265          /*==================彩灯亮度控制====================*/
+ 266          void Level_Change()
+ 267          {
+ 268   1        if(dat_rb2<60)
+ 269   1        {
+ 270   2          pwm_duty=5;
+ 271   2          level=1;
+ 272   2        }
+ 273   1        else if(dat_rb2<120)
+ 274   1        {
+ 275   2          pwm_duty=10;
+ 276   2          level=2;
+ 277   2        }
+ 278   1        else if(dat_rb2<180)
+ 279   1        {
+ 280   2          pwm_duty=15;
+ 281   2          level=3;
+ 282   2        }
+ 283   1        else
+ 284   1        {
+ 285   2          pwm_duty=20;
+ 286   2          level=4;
+ 287   2        }
+ 288   1      }
+ 289          /*==================彩灯四种模式变化====================*/
+ 290          void LED_Working()
+ 291          {
+ 292   1        switch(stat)
+ 293   1        {
+ 294   2          case 0:
+ 295   2            dat_led=0xff;
+ 296   2          break;
+ 297   2          //模式1彩灯变化形态
+ 298   2          case 1:
+ 299   2            dat_led=0xfe;
+ 300   2          break;
+ 301   2          case 2:
+ 302   2            dat_led=0xfc;
+C51 COMPILER V9.59.0.0   MAIN                                                              02/26/2022 13:58:31 PAGE 6   
+
+ 303   2          break;
+ 304   2          case 3:
+ 305   2            dat_led=0xf8;
+ 306   2          break;
+ 307   2          case 4:
+ 308   2            dat_led=0xf0;
+ 309   2          break;
+ 310   2          case 5:
+ 311   2            dat_led=0xe0;
+ 312   2          break;
+ 313   2          case 6:
+ 314   2            dat_led=0xc0;
+ 315   2          break;
+ 316   2          case 7:
+ 317   2            dat_led=0x80;
+ 318   2          break;
+ 319   2          case 8:
+ 320   2            dat_led=0x00;
+ 321   2          break;
+ 322   2          //模式2彩灯变化形态
+ 323   2          case 9:
+ 324   2            dat_led=0x7f;
+ 325   2          break;
+ 326   2          case 10:
+ 327   2            dat_led=0x3f;
+ 328   2          break;
+ 329   2          case 11:
+ 330   2            dat_led=0x1f;
+ 331   2          break;
+ 332   2          case 12:
+ 333   2            dat_led=0x0f;
+ 334   2          break;
+ 335   2          case 13:
+ 336   2            dat_led=0x07;
+ 337   2          break;
+ 338   2          case 14:
+ 339   2            dat_led=0x03;
+ 340   2          break;
+ 341   2          case 15:
+ 342   2            dat_led=0x01;
+ 343   2          break;
+ 344   2          case 16:
+ 345   2            dat_led=0x00;
+ 346   2          break;
+ 347   2          //模式3彩灯变化形态
+ 348   2          case 17:
+ 349   2            dat_led=0x7e;
+ 350   2          break;
+ 351   2          case 18:
+ 352   2            dat_led=0xbd;
+ 353   2          break;
+ 354   2          case 19:
+ 355   2            dat_led=0xdb;
+ 356   2          break;
+ 357   2          case 20:
+ 358   2            dat_led=0xe7;
+ 359   2          break;
+ 360   2          //模式4彩灯变化形态
+ 361   2          case 21:
+ 362   2            dat_led=0xe7;
+ 363   2          break;
+ 364   2          case 22:
+C51 COMPILER V9.59.0.0   MAIN                                                              02/26/2022 13:58:31 PAGE 7   
+
+ 365   2            dat_led=0xdb;
+ 366   2          break;
+ 367   2          case 23:
+ 368   2            dat_led=0xbd;
+ 369   2          break;
+ 370   2          case 24:
+ 371   2            dat_led=0x7e;
+ 372   2          break;
+ 373   2        }
+ 374   1        if(stat==0)
+ 375   1        {
+ 376   2          mode=1;
+ 377   2        }
+ 378   1        else if(stat==9)
+ 379   1        {
+ 380   2          mode=2;
+ 381   2        }
+ 382   1        else if(stat==17)
+ 383   1        {
+ 384   2          mode=3;
+ 385   2        }
+ 386   1        else if(stat==21)
+ 387   1        {
+ 388   2          mode=4;
+ 389   2        }
+ 390   1      }
+ 391          /*==================按键扫描与处理====================*/
+ 392          void Scan_Key()
+ 393          {
+ 394   1        if(S7==0)
+ 395   1        {
+ 396   2          Delayus(100);
+ 397   2          if(S7==0)
+ 398   2          {
+ 399   3            if(f_open==0)
+ 400   3            {
+ 401   4              f_open=1;
+ 402   4            }
+ 403   3            else
+ 404   3            {
+ 405   4              f_open=0;
+ 406   4              f_set=0;
+ 407   4              stat=0;
+ 408   4              mode=1;
+ 409   4            }
+ 410   3            while(S7==0);
+ 411   3          }
+ 412   2        }
+ 413   1        if(S6==0)
+ 414   1        {
+ 415   2          Delayus(100);
+ 416   2          if(S6==0)
+ 417   2          {
+ 418   3            f_set++;                  //模式加一
+ 419   3            while(S6==0)              //等待按键松开时数码管进行相应的显示  
+ 420   3            {
+ 421   4              if(f_set==1)
+ 422   4              {
+ 423   5                DisplaySMG_MOD();     //显示运行模式
+ 424   5              }
+ 425   4              else if(f_set==2)
+ 426   4              {
+C51 COMPILER V9.59.0.0   MAIN                                                              02/26/2022 13:58:31 PAGE 8   
+
+ 427   5                DisplaySMG_Time();    //显示流转间隔设置
+ 428   5              }
+ 429   4            }
+ 430   3          }
+ 431   2        }
+ 432   1        if(S5==0)
+ 433   1        {
+ 434   2          Delayus(100);
+ 435   2          if(S5==0)
+ 436   2          {
+ 437   3            if(f_set==1)              //当处于运行模式设置界面
+ 438   3            {
+ 439   4              mode_s6+=1;             //运行模式加一
+ 440   4              if(mode_s6>4)           //模式边界处理
+ 441   4              {
+ 442   5                mode_s6=4;
+ 443   5              }
+ 444   4              while(S5==0)            //等待按键松开时数码管进行相应的显示  
+ 445   4              {
+ 446   5                DisplaySMG_MOD();
+ 447   5              }
+ 448   4            }
+ 449   3            else if(f_set==2)         //当处于流转间隔设置界面
+ 450   3            {
+ 451   4              time_m[mode_s6-1]+=100; //流转间隔时间增加100ms
+ 452   4              if(time_m[mode_s6-1]>1200)
+ 453   4              {
+ 454   5                time_m[mode_s6-1]=1200;
+ 455   5              }
+ 456   4              while(S5==0)
+ 457   4              {
+ 458   5                DisplaySMG_Time();
+ 459   5              }
+ 460   4            }
+ 461   3          }
+ 462   2        }
+ 463   1        if(S4==0)
+ 464   1        {
+ 465   2          Delayus(100);
+ 466   2          if(S4==0)
+ 467   2          {
+ 468   3            if(f_set==1)
+ 469   3            {
+ 470   4              mode_s6-=1;
+ 471   4              if(mode_s6<1)
+ 472   4              {
+ 473   5                mode_s6=1;
+ 474   5              }
+ 475   4              while(S4==0)
+ 476   4              DisplaySMG_MOD();
+ 477   4            }
+ 478   3            else if(f_set==2)
+ 479   3            {
+ 480   4              time_m[mode_s6-1]-=100; 
+ 481   4              if(time_m[mode_s6-1]<400)
+ 482   4              {
+ 483   5                time_m[mode_s6-1]=400;
+ 484   5              }
+ 485   4              while(S4==0)
+ 486   4              DisplaySMG_Time();
+ 487   4            }
+ 488   3            else if(f_set==0)
+C51 COMPILER V9.59.0.0   MAIN                                                              02/26/2022 13:58:31 PAGE 9   
+
+ 489   3            {
+ 490   4              DispaySMG_Level();
+ 491   4              LED_Working();
+ 492   4            }
+ 493   3          }
+ 494   2        }
+ 495   1      }
+ 496          /*==================运行模式和流转间隔参数保存====================*/
+ 497          void Save_Config()
+ 498          {
+ 499   1        switch(mode_s6)
+ 500   1        {
+ 501   2          case 1:
+ 502   2            Write_24C02(0x01,time_m[0]/10);
+ 503   2          break;
+ 504   2          case 2:
+ 505   2            Write_24C02(0x02,time_m[1]/10);
+ 506   2          break;
+ 507   2          case 3:
+ 508   2            Write_24C02(0x03,time_m[2]/10);
+ 509   2          break;
+ 510   2          case 4:
+ 511   2            Write_24C02(0x04,time_m[3]/10);
+ 512   2          break;
+ 513   2        }
+ 514   1        Delayus(1000);
+ 515   1        DisplaySMG_All(0xff);
+ 516   1        mode_s6=1;
+ 517   1        f_set=0;
+ 518   1      }
+ 519          /*==================系统初始化====================*/
+ 520          void Init_System()
+ 521          {
+ 522   1        SelectHC573(5);
+ 523   1        P0=0x00;
+ 524   1        SelectHC573(4);
+ 525   1        P0=0xff;
+ 526   1        SelectHC573(0);
+ 527   1        
+ 528   1        time_m[0]=Read_24C02(0x01)*10;
+ 529   1        time_m[1]=Read_24C02(0x02)*10;
+ 530   1        time_m[2]=Read_24C02(0x03)*10;
+ 531   1        time_m[3]=Read_24C02(0x04)*10;
+ 532   1        
+ 533   1        InitTimer0();
+ 534   1      }
+ 535          /*==================主函数====================*/
+ 536          void main()
+ 537          {
+ 538   1        Init_System();
+ 539   1        while(1)
+ 540   1        {
+ 541   2          Scan_Key();
+ 542   2          Read_Rb2();
+ 543   2          Level_Change();
+ 544   2          switch(f_set)
+ 545   2          {
+ 546   3            case 1:
+ 547   3              DisplaySMG_MOD();
+ 548   3            break;
+ 549   3            case 2:
+ 550   3              DisplaySMG_Time();
+C51 COMPILER V9.59.0.0   MAIN                                                              02/26/2022 13:58:31 PAGE 10  
+
+ 551   3            break;
+ 552   3            case 3:
+ 553   3              Save_Config();
+ 554   3            break;
+ 555   3          }
+ 556   2        }
+ 557   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   1654    ----
+   CONSTANT SIZE    =     11    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =     24       4
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

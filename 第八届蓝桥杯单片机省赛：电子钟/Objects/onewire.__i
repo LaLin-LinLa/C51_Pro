@@ -1,0 +1,1 @@
+"ds18b20\onewire.c" OPTIMIZE (8,SPEED) BROWSE INCDIR(.\ds18b20;.\ds1302) DEBUG OBJECTEXTEND PRINT(.\Listings\onewire.lst) TABS (2) OBJECT(.\Objects\onewire.obj)

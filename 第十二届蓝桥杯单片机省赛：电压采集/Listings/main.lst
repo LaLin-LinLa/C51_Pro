@@ -1,0 +1,499 @@
+C51 COMPILER V9.59.0.0   MAIN                                                              04/02/2022 13:59:36 PAGE 1   
+
+
+C51 COMPILER V9.59.0.0, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\Objects\main.obj
+COMPILER INVOKED BY: E:\Keil5_v5\C51\BIN\C51.EXE main.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listings\mai
+                    -n.lst) TABS(2) OBJECT(.\Objects\main.obj)
+
+line level    source
+
+   1          #include <STC15F2K60S2.H>
+   2          #include "iic.h"
+   3          
+   4          unsigned int count_f=0;   //频率计数
+   5          unsigned int count_t=0;   //定时器计数
+   6          unsigned int dat_f=0;     //频率
+   7          unsigned int dat_t=0;     //周期
+   8          unsigned int dat_rb1=0;   //光敏电阻
+   9          unsigned int dat_rb2=0;   //rb2电阻
+  10          unsigned int dat_vb1=0;   //光敏电压
+  11          unsigned int dat_vb2=0;   //rb2电压
+  12          unsigned char channel=1;  //电压通道 
+  13          unsigned char s4_mode=1;  //界面切换设置
+  14          unsigned char s7_mode=1;  //S7按键功能：1短按，2长按
+  15          bit f_led=1;              //LED功能使能标记
+  16          bit f_s7=0;               //S7长按标记
+  17          unsigned int count_s7=0;  //S7长按计数
+  18          unsigned char save_vb2=0;
+  19          unsigned char save_f=0;
+  20          
+  21          sbit S4=P3^3;
+  22          sbit S5=P3^2;
+  23          sbit S6=P3^1;
+  24          sbit S7=P3^0;
+  25          
+  26          sbit L1=P0^0;
+  27          sbit L2=P0^1;
+  28          sbit L3=P0^2;
+  29          sbit L4=P0^3;
+  30          sbit L5=P0^4;
+  31          
+  32          unsigned char code SMG_D[10]={0xc0,0xf9,0xa4,0xb0,0x99,0x92,0x82,0xf8,0x80,0x90};
+  33          unsigned char code SMG_D2[10]={0x40,0x79,0x24,0x30,0x19,0x12,0x02,0x78,0x00,0x10};
+  34          void Init_Timer();
+  35          void DigDisplay();
+  36                                        
+  37          /*=====================系统初始化=====================*/
+  38          void SelectHC573(unsigned char channel)
+  39          {
+  40   1        switch(channel)
+  41   1        {
+  42   2          case 4:
+  43   2            P2=(P2&0x1f)|0x80;
+  44   2          break;
+  45   2          case 5:
+  46   2            P2=(P2&0x1f)|0xa0;
+  47   2          break;
+  48   2          case 6:
+  49   2            P2=(P2&0x1f)|0xc0;
+  50   2          break;
+  51   2          case 7:
+  52   2            P2=(P2&0x1f)|0xe0;
+  53   2          break;
+  54   2          case 0:
+C51 COMPILER V9.59.0.0   MAIN                                                              04/02/2022 13:59:36 PAGE 2   
+
+  55   2            P2=(P2&0x1f)|0x00;
+  56   2          break;
+  57   2        }
+  58   1      }
+  59          
+  60          void Init_System()
+  61          {
+  62   1        SelectHC573(5);
+  63   1        P0=0x00;
+  64   1        SelectHC573(4);
+  65   1        P0=0xff;
+  66   1        SelectHC573(0);
+  67   1        Init_Timer();
+  68   1      }
+  69          /*=====================各种延时函数=====================*/
+  70          void Delayus(unsigned int t)
+  71          {
+  72   1        while(t--);
+  73   1      }
+  74          /*=====================数码管基础函数=====================*/
+  75          void DisplaySMG_Bit(unsigned char pos,unsigned char value)
+  76          {
+  77   1        SelectHC573(6);
+  78   1        P0=0x00;
+  79   1        SelectHC573(6);
+  80   1        P0=0x01<<pos;
+  81   1        SelectHC573(7);
+  82   1        P0=value;
+  83   1      }
+  84          
+  85          void DisplaySMG_All(unsigned char value)
+  86          {
+  87   1        SelectHC573(6);
+  88   1        P0=0xff;
+  89   1        SelectHC573(7);
+  90   1        P0=value;
+  91   1      }
+  92          /*=====================定时器=====================*/
+  93          void Init_Timer()
+  94          {
+  95   1        TH0=0xff;
+  96   1        TL0=0xff;
+  97   1        
+  98   1        TH1=(65536-50000)/256;
+  99   1        TL1=(65536-50000)%256;
+ 100   1        
+ 101   1        TMOD=0x06;
+ 102   1        ET0=1;
+ 103   1        ET1=1;
+ 104   1        EA=1;
+ 105   1        TR0=1;
+ 106   1        TR1=1;
+ 107   1      }
+ 108          /*=====================定时器中断服务=====================*/
+ 109          void Service_Timer0() interrupt 1
+ 110          {
+ 111   1        count_f++;
+ 112   1      }
+ 113          
+ 114          void Service_Timer1() interrupt 3
+ 115          {
+ 116   1        TH1=(65536-50000)/256;
+C51 COMPILER V9.59.0.0   MAIN                                                              04/02/2022 13:59:36 PAGE 3   
+
+ 117   1        TL1=(65536-50000)%256;
+ 118   1        count_t++;
+ 119   1        if(count_t==20)
+ 120   1        {
+ 121   2          dat_f=count_f;
+ 122   2          dat_t=10000/dat_f;
+ 123   2          count_f=0;
+ 124   2          count_t=0;
+ 125   2        }
+ 126   1        if(f_s7)
+ 127   1        {
+ 128   2          count_s7++;
+ 129   2          if(count_s7==20)
+ 130   2          {
+ 131   3            count_s7=20;
+ 132   3            s7_mode=2;
+ 133   3          }
+ 134   2        }
+ 135   1      }
+ 136          /*=====================可调电阻电压输出=====================*/
+ 137          void Read_rb2()
+ 138          {
+ 139   1        IIC_Start();
+ 140   1        IIC_SendByte(0x90);
+ 141   1        IIC_WaitAck();
+ 142   1        IIC_SendByte(0x03);
+ 143   1        IIC_WaitAck();
+ 144   1        IIC_Stop();
+ 145   1        
+ 146   1        DigDisplay();
+ 147   1        
+ 148   1        IIC_Start();
+ 149   1        IIC_SendByte(0x91);
+ 150   1        IIC_WaitAck();
+ 151   1        dat_rb2=IIC_RecByte();
+ 152   1        IIC_SendAck(1);
+ 153   1        IIC_Stop();
+ 154   1        
+ 155   1        dat_vb2=dat_rb2*1.96+0.2;
+ 156   1        DigDisplay();
+ 157   1      }
+ 158          /*=====================光敏电阻电压输出=====================*/
+ 159          void Read_rb1()
+ 160          {
+ 161   1        IIC_Start();
+ 162   1        IIC_SendByte(0x90);
+ 163   1        IIC_WaitAck();
+ 164   1        IIC_SendByte(0x01);
+ 165   1        IIC_WaitAck();
+ 166   1        IIC_Stop();
+ 167   1        
+ 168   1        DigDisplay();
+ 169   1        
+ 170   1        IIC_Start();
+ 171   1        IIC_SendByte(0x91);
+ 172   1        IIC_WaitAck();
+ 173   1        dat_rb1=IIC_RecByte();
+ 174   1        IIC_SendAck(1);
+ 175   1        IIC_Stop();
+ 176   1        
+ 177   1        dat_vb1=dat_rb1*1.96+0.2;
+ 178   1        DigDisplay();
+C51 COMPILER V9.59.0.0   MAIN                                                              04/02/2022 13:59:36 PAGE 4   
+
+ 179   1      }
+ 180          /*=====================24C02相关函数=====================*/
+ 181          void Write_24C02(unsigned char addr,unsigned char dat)
+ 182          {
+ 183   1        IIC_Start();
+ 184   1        IIC_SendByte(0xa0);
+ 185   1        IIC_WaitAck();
+ 186   1        IIC_SendByte(addr);
+ 187   1        IIC_WaitAck();
+ 188   1        IIC_SendByte(dat);
+ 189   1        IIC_WaitAck();
+ 190   1        IIC_Stop();
+ 191   1      }
+ 192          
+ 193          unsigned char Read_24C02(unsigned char addr)
+ 194          {
+ 195   1        unsigned char temp;
+ 196   1        IIC_Start();
+ 197   1        IIC_SendByte(0xa0);
+ 198   1        IIC_WaitAck();
+ 199   1        IIC_SendByte(addr);
+ 200   1        IIC_WaitAck();
+ 201   1        
+ 202   1        IIC_Start();
+ 203   1        IIC_SendByte(0xa1);
+ 204   1        IIC_WaitAck();
+ 205   1        temp=IIC_RecByte();
+ 206   1        IIC_SendAck(1);
+ 207   1        IIC_Stop();
+ 208   1        return temp;
+ 209   1      }
+ 210          /*=====================频率显示界面=====================*/
+ 211          void DisplaySMG_F()
+ 212          {
+ 213   1        DisplaySMG_Bit(0,0x8e);
+ 214   1        Delayus(100);
+ 215   1        if(dat_f>999999)
+ 216   1        {
+ 217   2          DisplaySMG_Bit(1,SMG_D[dat_f/1000000]);
+ 218   2          Delayus(100);
+ 219   2        }
+ 220   1        if(dat_f>99999)
+ 221   1        {
+ 222   2          DisplaySMG_Bit(2,SMG_D[(dat_f/100000)%10]);
+ 223   2          Delayus(100);
+ 224   2        }
+ 225   1        if(dat_f>9999)
+ 226   1        {
+ 227   2          DisplaySMG_Bit(3,SMG_D[(dat_f/10000)%10]);
+ 228   2          Delayus(100);
+ 229   2        }
+ 230   1        if(dat_f>999)
+ 231   1        {
+ 232   2          DisplaySMG_Bit(4,SMG_D[(dat_f/1000)%10]);
+ 233   2          Delayus(100);
+ 234   2        }
+ 235   1        if(dat_f>99)
+ 236   1        {
+ 237   2          DisplaySMG_Bit(5,SMG_D[(dat_f/100)%10]);
+ 238   2          Delayus(100);
+ 239   2        }
+ 240   1        if(dat_f>9)
+C51 COMPILER V9.59.0.0   MAIN                                                              04/02/2022 13:59:36 PAGE 5   
+
+ 241   1        {
+ 242   2          DisplaySMG_Bit(6,SMG_D[(dat_f/10)%10]);
+ 243   2          Delayus(100);
+ 244   2        }
+ 245   1        DisplaySMG_Bit(7,SMG_D[dat_f%10]);
+ 246   1        Delayus(100);
+ 247   1        DisplaySMG_All(0xff);
+ 248   1      }
+ 249          /*=====================周期显示界面=====================*/
+ 250          void DisplaySMG_T()
+ 251          {
+ 252   1        DisplaySMG_Bit(0,0xc8);
+ 253   1        Delayus(100);
+ 254   1        if(dat_t>999999)
+ 255   1        {
+ 256   2          DisplaySMG_Bit(1,SMG_D[dat_t/1000000]);
+ 257   2          Delayus(100);
+ 258   2        }
+ 259   1        if(dat_t>99999)
+ 260   1        {
+ 261   2          DisplaySMG_Bit(2,SMG_D[(dat_t/100000)%10]);
+ 262   2          Delayus(100);
+ 263   2        }
+ 264   1        if(dat_t>9999)
+ 265   1        {
+ 266   2          DisplaySMG_Bit(3,SMG_D[(dat_t/10000)%10]);
+ 267   2          Delayus(100);
+ 268   2        }
+ 269   1        if(dat_t>999)
+ 270   1        {
+ 271   2          DisplaySMG_Bit(4,SMG_D[(dat_t/1000)%10]);
+ 272   2          Delayus(100);
+ 273   2        }
+ 274   1        if(dat_t>99)
+ 275   1        {
+ 276   2          DisplaySMG_Bit(5,SMG_D[(dat_t/100)%10]);
+ 277   2          Delayus(100);
+ 278   2        }
+ 279   1        if(dat_t>9)
+ 280   1        {
+ 281   2          DisplaySMG_Bit(6,SMG_D[(dat_t/10)%10]);
+ 282   2          Delayus(100);
+ 283   2        }
+ 284   1        DisplaySMG_Bit(7,SMG_D[dat_t%10]);
+ 285   1        Delayus(100);
+ 286   1        DisplaySMG_All(0xff);
+ 287   1      }
+ 288          /*=====================电压显示界面=====================*/
+ 289          void DisplaySMG_V()
+ 290          {
+ 291   1        DisplaySMG_Bit(0,0xc1);
+ 292   1        Delayus(100);
+ 293   1        DisplaySMG_Bit(1,0xbf);
+ 294   1        Delayus(100);
+ 295   1        DisplaySMG_Bit(2,SMG_D[channel]);
+ 296   1        Delayus(100);
+ 297   1        if(channel==1)
+ 298   1        {
+ 299   2          DisplaySMG_Bit(5,SMG_D2[dat_vb1/100]);
+ 300   2          Delayus(100);
+ 301   2          DisplaySMG_Bit(6,SMG_D[(dat_vb1/10)%10]);
+ 302   2          Delayus(100);
+C51 COMPILER V9.59.0.0   MAIN                                                              04/02/2022 13:59:36 PAGE 6   
+
+ 303   2          DisplaySMG_Bit(7,SMG_D[dat_vb1%10]);
+ 304   2          Delayus(100);
+ 305   2        }
+ 306   1        else if(channel==3)
+ 307   1        {
+ 308   2          DisplaySMG_Bit(5,SMG_D2[dat_vb2/100]);
+ 309   2          Delayus(100);
+ 310   2          DisplaySMG_Bit(6,SMG_D[(dat_vb2/10)%10]);
+ 311   2          Delayus(100);
+ 312   2          DisplaySMG_Bit(7,SMG_D[dat_vb2%10]);
+ 313   2          Delayus(100);
+ 314   2        }
+ 315   1        DisplaySMG_All(0xff);
+ 316   1      }
+ 317          /*=====================数码管显示=====================*/
+ 318          void DigDisplay()
+ 319          {
+ 320   1        switch(s4_mode)
+ 321   1        {
+ 322   2          case 1:
+ 323   2            DisplaySMG_F();
+ 324   2          break;
+ 325   2          case 2:
+ 326   2            DisplaySMG_T();
+ 327   2          break;
+ 328   2          case 3:
+ 329   2            DisplaySMG_V();
+ 330   2          break;
+ 331   2        }
+ 332   1      }
+ 333          /*=====================LED工作=====================*/
+ 334          void LedWorking()
+ 335          {
+ 336   1        save_vb2=Read_24C02(0x01);  //3
+ 337   1        save_f=Read_24C02(0x02);    //1
+ 338   1        if(f_led)
+ 339   1        {
+ 340   2          if(save_vb2<dat_vb2)
+ 341   2          {
+ 342   3            SelectHC573(4);
+ 343   3            L1=0;
+ 344   3            SelectHC573(0);
+ 345   3          }
+ 346   2          else
+ 347   2          {
+ 348   3            SelectHC573(4);
+ 349   3            L1=1;
+ 350   3            SelectHC573(0);
+ 351   3          }
+ 352   2          if(save_f<dat_f)
+ 353   2          {
+ 354   3            SelectHC573(4);
+ 355   3            L2=0;
+ 356   3            SelectHC573(0);
+ 357   3          }
+ 358   2          else
+ 359   2          {
+ 360   3            SelectHC573(4);
+ 361   3            L2=1;
+ 362   3            SelectHC573(0);
+ 363   3          }
+ 364   2          if(s4_mode==1)
+C51 COMPILER V9.59.0.0   MAIN                                                              04/02/2022 13:59:36 PAGE 7   
+
+ 365   2          {
+ 366   3            SelectHC573(4);
+ 367   3            L3=0;
+ 368   3            SelectHC573(0);
+ 369   3          }
+ 370   2          else L3=1;
+ 371   2          if(s4_mode==2)
+ 372   2          {
+ 373   3            SelectHC573(4);
+ 374   3            L4=0;
+ 375   3            SelectHC573(0);
+ 376   3          }
+ 377   2          else L4=1;
+ 378   2          if(s4_mode==3)
+ 379   2          {
+ 380   3            SelectHC573(4);
+ 381   3            L5=0;
+ 382   3            SelectHC573(0);
+ 383   3          }
+ 384   2          else L5=1;
+ 385   2        }
+ 386   1        else
+ 387   1        {
+ 388   2          SelectHC573(4);
+ 389   2          P0=0xff;
+ 390   2          SelectHC573(0);
+ 391   2        }
+ 392   1      }
+ 393          /*=====================键盘扫描=====================*/
+ 394          void ScanKey()
+ 395          {
+ 396   1        if(S4==0)
+ 397   1        {
+ 398   2          while(S4==0)
+ 399   2          {
+ 400   3            DigDisplay();
+ 401   3            LedWorking();
+ 402   3          }
+ 403   2          s4_mode++;
+ 404   2          if(s4_mode>3)
+ 405   2          s4_mode=1;
+ 406   2          
+ 407   2        }
+ 408   1        else if(S5==0)
+ 409   1        {
+ 410   2          while(S5==0)
+ 411   2          {
+ 412   3            DigDisplay();
+ 413   3            LedWorking();
+ 414   3          }
+ 415   2          channel=channel+2;
+ 416   2          if(channel>3)
+ 417   2          channel=1;
+ 418   2        }
+ 419   1        else if(S6==0)
+ 420   1        {
+ 421   2          while(S6==0)
+ 422   2          {
+ 423   3            DigDisplay();
+ 424   3            LedWorking();
+ 425   3          }
+ 426   2          Write_24C02(0x01,dat_vb2);
+C51 COMPILER V9.59.0.0   MAIN                                                              04/02/2022 13:59:36 PAGE 8   
+
+ 427   2        }
+ 428   1        else if(S7==0)
+ 429   1        {
+ 430   2          while(S7==0)
+ 431   2          {
+ 432   3            DigDisplay();
+ 433   3            LedWorking();
+ 434   3            f_s7=1;
+ 435   3          }
+ 436   2          f_s7=0;
+ 437   2          count_s7=0;
+ 438   2          if(s7_mode==1)
+ 439   2          {
+ 440   3            Write_24C02(0x02,dat_f);
+ 441   3          }
+ 442   2          else if(s7_mode==2)
+ 443   2          {
+ 444   3            f_led=~f_led;
+ 445   3            s7_mode=1;
+ 446   3          }
+ 447   2        }
+ 448   1      }
+ 449          /*=====================主函数=====================*/
+ 450          void main()
+ 451          {
+ 452   1        Init_System();
+ 453   1        while(1)
+ 454   1        {
+ 455   2          Read_rb2();
+ 456   2          Read_rb1();
+ 457   2          LedWorking();
+ 458   2          DigDisplay();
+ 459   2          ScanKey();
+ 460   2        }
+ 461   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   1688    ----
+   CONSTANT SIZE    =     20    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =     23       4
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =      2    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
