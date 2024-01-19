@@ -4,7 +4,7 @@
             "name": "Target 1",
             "includePath": [
                 "D:\\Apps\\Keil5_v5\\C51\\INC",
-                "f:\\workplace\\线束检测 - 副本"
+                "f:\\workplace\\线束检测"
             ],
             "defines": [
                 "__C51__",

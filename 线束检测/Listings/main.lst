@@ -1,4 +1,4 @@
-C51 COMPILER V9.59.0.0   MAIN                                                              01/17/2024 01:15:55 PAGE 1   
+C51 COMPILER V9.59.0.0   MAIN                                                              01/18/2024 19:07:12 PAGE 1   
 
 
 C51 COMPILER V9.59.0.0, COMPILATION OF MODULE MAIN
@@ -12,98 +12,98 @@ line level    source
    2            #include <stdio.h>
    3            #include <stdarg.h>
    4            #include <intrins.h>
-   5          
-   6            /*总线矩阵检测*/
-   7            sbit SA1 = P3^5;
-   8            sbit SA2 = P3^6;
-   9            sbit SA3 = P3^7;
-  10            sbit SA4 = P4^1;
-  11          
-  12            sbit SB1 = P4^2;
-  13            sbit SB2 = P4^3;
-  14            sbit SB3 = P4^4;
-  15            sbit SB4 = P2^0;
-  16          
-  17            sbit SC1 = P2^4;
-  18            sbit SC2 = P2^5;
-  19            sbit SC3 = P2^6;
-  20            sbit SC4 = P2^7;
-  21          
-  22            sbit SD1 = P4^5;
-  23            sbit SD2 = P4^6;
-  24            sbit SD3 = P0^0;
-  25            sbit SD4 = P0^1;
-  26          
-  27            sbit SE1 = P0^2;
-  28            sbit SE2 = P0^3;
-  29            sbit SE3 = P0^4;
-  30          
-  31            sbit A0  = P5^4;
-  32            sbit A1  = P1^7;
-  33            sbit A2  = P5^5;
-  34          
-  35            sbit B0  = P3^2;
-  36            sbit B1  = P4^0;
-  37            sbit B2  = P3^3;
-  38          
-  39            sbit C0  = P2^2;
-  40            sbit C1  = P2^1;
-  41            sbit C2  = P2^3;
-  42          
-  43            sbit D0  = P0^6;
-  44            sbit D1  = P0^5;
-  45            sbit D2  = P0^7;
-  46          
-  47            sbit E0  = P1^2;
-  48            sbit E1  = P4^7;
-  49            sbit E2  = P1^3;
-  50          
-  51            #define NONE_PARITY     0       //无校验
-  52            #define ODD_PARITY      1       //奇校验
-  53            #define EVEN_PARITY     2       //偶校验
-  54            #define MARK_PARITY     3       //标记校验
-C51 COMPILER V9.59.0.0   MAIN                                                              01/17/2024 01:15:55 PAGE 2   
+   5           
+   6            
+   7            /*总线矩阵检测*/
+   8            sbit SA1 = P3^5;
+   9            sbit SA2 = P3^6;
+  10            sbit SA3 = P3^7;
+  11            sbit SA4 = P4^1;
+  12          
+  13            sbit SB1 = P4^2;
+  14            sbit SB2 = P4^3;
+  15            sbit SB3 = P4^4;
+  16            sbit SB4 = P2^0;
+  17          
+  18            sbit SC1 = P2^4;
+  19            sbit SC2 = P2^5;
+  20            sbit SC3 = P2^6;
+  21            sbit SC4 = P2^7;
+  22          
+  23            sbit SD1 = P4^5;
+  24            sbit SD2 = P4^6;
+  25            sbit SD3 = P0^0;
+  26            sbit SD4 = P0^1;
+  27          
+  28            sbit SE1 = P0^2;
+  29            sbit SE2 = P0^3;
+  30            sbit SE3 = P0^4;
+  31          
+  32            sbit A0  = P5^4;
+  33            sbit A1  = P1^7;
+  34            sbit A2  = P3^4;
+  35          
+  36            sbit B0  = P3^2;
+  37            sbit B1  = P4^0;
+  38            sbit B2  = P3^3;
+  39          
+  40            sbit C0  = P2^2;
+  41            sbit C1  = P2^1;
+  42            sbit C2  = P2^3;
+  43          
+  44            sbit D0  = P0^6;
+  45            sbit D1  = P0^5;
+  46            sbit D2  = P0^7;
+  47          
+  48            sbit E0  = P1^2;
+  49            sbit E1  = P4^7;
+  50            sbit E2  = P1^3;
+  51          
+  52            #define NONE_PARITY     0       //无校验
+  53            #define ODD_PARITY      1       //奇校验
+  54            #define EVEN_PARITY     2       //偶校验
+C51 COMPILER V9.59.0.0   MAIN                                                              01/18/2024 19:07:12 PAGE 2   
 
-  55            #define SPACE_PARITY    4       //空白校验
-  56            
-  57            #define S1_S0 0x40              //P_SW1.6
-  58            #define S1_S1 0x80              //P_SW1.7
-  59            #define S2_S0 0x01              //P_SW2.0
-  60            #define S2RI  0x01              //S2CON.0
-  61            #define S2TI  0x02              //S2CON.1
-  62            #define S2RB8 0x04              //S2CON.2
-  63            #define S2TB8 0x08              //S2CON.3
-  64          
-  65            #define BOOT    0x00    //空闲
-  66            #define STEP    0x01    //单步检测
-  67            #define ROLL    0x02    //滚动检测
-  68            #define DEBUG   0x03    //开关debug
-  69            #define HELP    0x04    //命令帮助
-  70            #define REBOOT  0x05    //重启
-  71            #define AUTO    0x06    //自动检测
-  72          
-  73            #define FOSC 11059200L          //系统频率
-  74          
-  75            #define UART1_IO          0       //定义串口1IO口复用选择
-  76            #define UART1_PARITYBIT NONE_PARITY     //定义校验位
-  77            #define UART1_BODE    9600        //串口波特率
-  78            
-  79            #define UART2_IO          0       //定义串口2IO口复用选择
-  80            #define UART2_PARITYBIT NONE_PARITY     //定义校验位
-  81            #define UART2_BODE    9600        //串口波特率
-  82          
-  83            #define REPORT  UART2_SendString
-  84            #define PRINTF  UART1_SendData
-  85            
-  86            static unsigned char err  = 0;
-  87            static unsigned char err_last  = 0;
-  88            static bit f_debug = 0;
+  55            #define MARK_PARITY     3       //标记校验
+  56            #define SPACE_PARITY    4       //空白校验
+  57            
+  58            #define S1_S0 0x40              //P_SW1.6
+  59            #define S1_S1 0x80              //P_SW1.7
+  60            #define S2_S0 0x01              //P_SW2.0
+  61            #define S2RI  0x01              //S2CON.0
+  62            #define S2TI  0x02              //S2CON.1
+  63            #define S2RB8 0x04              //S2CON.2
+  64            #define S2TB8 0x08              //S2CON.3
+  65          
+  66            #define BOOT    0x00    //空闲
+  67            #define STEP    0x01    //单步检测
+  68            #define ROLL    0x02    //滚动检测
+  69            #define DEBUG   0x03    //开关debug
+  70            #define HELP    0x04    //命令帮助
+  71            #define REBOOT  0x05    //重启
+  72            #define AUTO    0x06    //自动检测
+  73          
+  74            #define FOSC 11059200L          //系统频率
+  75          
+  76            #define UART1_IO          0       //定义串口1IO口复用选择
+  77            #define UART1_PARITYBIT NONE_PARITY     //定义校验位
+  78            #define UART1_BODE    9600        //串口波特率
+  79            
+  80            #define UART2_IO          0       //定义串口2IO口复用选择
+  81            #define UART2_PARITYBIT NONE_PARITY     //定义校验位
+  82            #define UART2_BODE    9600        //串口波特率
+  83          
+  84            #define REPORT  UART2_SendString
+  85            #define PRINTF  UART1_SendData
+  86            
+  87            static unsigned char err  = 0;
+  88            static unsigned char err_last  = 0;
   89            static bit tx1_busy = 0;
   90            static bit tx2_busy = 0;
   91            int line = -1;
   92            int line_last = -1;
   93            int bus[4];   
-  94            int pos[5];
+  94            int pos[6];
   95            unsigned char cmd = ROLL;
   96            unsigned char cmd_last = ROLL;
   97          
@@ -126,7 +126,7 @@ line level    source
  114   1          while(t)
  115   1          {
  116   2            _nop_();
-C51 COMPILER V9.59.0.0   MAIN                                                              01/17/2024 01:15:55 PAGE 3   
+C51 COMPILER V9.59.0.0   MAIN                                                              01/18/2024 19:07:12 PAGE 3   
 
  117   2            _nop_();
  118   2            _nop_();
@@ -190,7 +190,7 @@ line level    source
  175   1            P_SW2 &= ~S2_S0;            //S2_S0=0 (P1.0/RxD2, P1.1/TxD2)
  176   1          #elif (UART2_IO==1)
                     P_SW2 |= S2_S0;           //S2_S0=1 (P4.6/RxD2_2, P4.7/TxD2_2)
-C51 COMPILER V9.59.0.0   MAIN                                                              01/17/2024 01:15:55 PAGE 4   
+C51 COMPILER V9.59.0.0   MAIN                                                              01/18/2024 19:07:12 PAGE 4   
 
                   #endif
  179   1          #if (UART2_PARITYBIT == NONE_PARITY)
@@ -254,7 +254,7 @@ line level    source
  236   2            }
  237   1            else
  238   1            {
-C51 COMPILER V9.59.0.0   MAIN                                                              01/17/2024 01:15:55 PAGE 5   
+C51 COMPILER V9.59.0.0   MAIN                                                              01/18/2024 19:07:12 PAGE 5   
 
  239   2        #if (UART2_PARITYBIT == ODD_PARITY)
                         S2CON |= S2TB8;         //设置校验位为1
@@ -318,298 +318,426 @@ line level    source
  298   2          }
  299   1          if (S2CON & S2TI)           //发送中断
  300   1          {
-C51 COMPILER V9.59.0.0   MAIN                                                              01/17/2024 01:15:55 PAGE 6   
+C51 COMPILER V9.59.0.0   MAIN                                                              01/18/2024 19:07:12 PAGE 6   
 
  301   2              S2CON &= ~S2TI;         //清除S2TI位
  302   2              tx2_busy = 0;           //清发送忙标志
  303   2          }
  304   1        }
- 305          
- 306            /**
- 307              * @brief  线束检测任务
- 308              * @retval 0: 检测完成  其他：错误
- 309              */
- 310            unsigned char Check_Task(void){
+ 305            /**
+ 306              * @brief  线束检测任务
+ 307              * @retval 0: 检测完成  其他：错误
+ 308              */
+ 309            unsigned char Check_Task(void){
+ 310   1          char i;
  311   1          line_last = line;
  312   1          if(SA1||SA2||SA3||SA4)        //A组检测
  313   1          {
- 314   2            pos[0] = pos[1] = pos[2] = pos[3] = pos[4]
+ 314   2            pos[0] = pos[1] = pos[2] = pos[3] = pos[4] = pos[5]
  315   2            = bus[0] = bus[1] = bus[2] = bus[3] = 0;
  316   2            line = 0;
- 317   2            if (f_debug){
- 318   3              printf("\r\n debug检测内容：\r\n");
- 319   3              printf(" A组检测  line = %d\r\n", line);}
- 320   2            pos[0] = SA1;pos[1] = SA2;pos[2] = SA3;pos[3] = SA4;
- 321   2            pos[4] = 15 - (pos[0]|pos[1]<<1|pos[2]<<2|pos[3]<<3);
- 322   2            if (f_debug)
- 323   2              printf(" SA1=%d; SA2=%d; SA3=%d; SA4=%d; SA_group=%d\r\n", pos[0],pos[1],pos[2],pos[3],pos[4]);
- 324   2            if(pos[4] > 4) {return 1;}
- 325   2            bus[0] = A0; bus[1] = A1; bus[2] = A2;
- 326   2            bus[3] = bus[0]|bus[1]<<1|bus[2]<<2;
- 327   2            if (f_debug)
- 328   2              printf(" A0=%d; A1=%d; A2=%d; A210=%d\r\n", bus[0],bus[1],bus[2],bus[3]);
- 329   2            
+ 317   2            pos[0] = SA1;pos[1] = SA2;pos[2] = SA3;pos[3] = SA4;  
+ 318   2            
+ 319   2            for(i=0;i<4;i++){
+ 320   3              if(!pos[i]){
+ 321   4                pos[4]++;
+ 322   4                pos[5] = i+1;
+ 323   4              }
+ 324   3            }
+ 325   2            if(pos[5]!=pos[4]){
+ 326   3              return 1;
+ 327   3            }
+ 328   2            bus[0] = A0; bus[1] = A1; bus[2] = A2;
+ 329   2            bus[3] = bus[0]|bus[1]<<1|bus[2]<<2;
  330   2            line += (bus[3]+8*pos[4]);
  331   2            return 0;
  332   2          }
- 333   1          if(SB1||SB2||SB3||SB4)    //B组检测
- 334   1          {
- 335   2            pos[0] = pos[1] = pos[2] = pos[3] = pos[4]
- 336   2            = bus[0] = bus[1] = bus[2] = bus[3] = 0;
- 337   2            line = 32;
- 338   2            if (f_debug)
- 339   2              printf(" B组检测  line = %d\r\n", line);  
- 340   2            pos[0] = SB1;pos[1] = SB2;pos[2] = SB3;pos[3] = SB4;
- 341   2            pos[4] = 15 - (pos[0]|pos[1]<<1|pos[2]<<2|pos[3]<<3);
- 342   2            if (f_debug)
- 343   2              printf(" SB1=%d; SB2=%d; SB3=%d; SB4=%d; SB_group=%d\r\n", pos[0],pos[1],pos[2],pos[3],pos[4]);
- 344   2            if(pos[4] > 4) {return 2;}
- 345   2            bus[0] = B0; bus[1] = B1; bus[2] = B2;
- 346   2            bus[3] = bus[0]|bus[1]<<1|bus[2]<<2;
- 347   2            if (f_debug)
- 348   2              printf(" B0=%d; B1=%d; B2=%d; B210=%d\r\n", bus[0],bus[1],bus[2],bus[3]);
- 349   2            line += (bus[3]+8*pos[4]);
- 350   2            return 0;
- 351   2          }
- 352   1          if(SC1||SC2||SC3||SC4)    //C组检测
- 353   1          {
- 354   2            pos[0] = pos[1] = pos[2] = pos[3] = pos[4]
- 355   2            = bus[0] = bus[1] = bus[2] = bus[3] = 0;
- 356   2            line = 64;
- 357   2            if (f_debug)
- 358   2              printf(" C组检测  line = %d\r\n", line);
- 359   2            pos[0] = SC1;pos[1] = SC2;pos[2] = SC3;pos[3] = SC4;
- 360   2            pos[4] = 15 - (pos[0]|pos[1]<<1|pos[2]<<2|pos[3]<<3);
- 361   2            if (f_debug)
- 362   2              printf(" SC1=%d; SC2=%d; SC3=%d; SC4=%d; SC_group=%d\r\n", pos[0],pos[1],pos[2],pos[3],pos[4]);
-C51 COMPILER V9.59.0.0   MAIN                                                              01/17/2024 01:15:55 PAGE 7   
+ 333   1          
+ 334   1          if(SB1||SB2||SB3||SB4)    //B组检测
+ 335   1          {
+ 336   2            pos[0] = pos[1] = pos[2] = pos[3] = pos[4] = pos[5]
+ 337   2            = bus[0] = bus[1] = bus[2] = bus[3] = 0;
+ 338   2            line = 32;
+ 339   2            pos[0] = SB1;pos[1] = SB2;pos[2] = SB3;pos[3] = SB4;
+ 340   2            for(i=0;i<4;i++){
+ 341   3              if(!pos[i]){
+ 342   4                pos[4]++;
+ 343   4                pos[5] = i+1;
+ 344   4              }
+ 345   3            }
+ 346   2            if(pos[5]!=pos[4]){
+ 347   3              return 2;
+ 348   3            }
+ 349   2            bus[0] = B0; bus[1] = B1; bus[2] = B2;
+ 350   2            bus[3] = bus[0]|bus[1]<<1|bus[2]<<2;
+ 351   2            line += (bus[3]+8*pos[4]);
+ 352   2            return 0;
+ 353   2          }
+ 354   1          
+ 355   1          if(SC1||SC2||SC3||SC4)    //C组检测
+ 356   1          {
+ 357   2            pos[0] = pos[1] = pos[2] = pos[3] = pos[4] = pos[5]
+ 358   2            = bus[0] = bus[1] = bus[2] = bus[3] = 0;
+ 359   2            line = 64;
+ 360   2            pos[0] = SC1;pos[1] = SC2;pos[2] = SC3;pos[3] = SC4;
+ 361   2            for(i=0;i<4;i++){
+ 362   3              if(!pos[i]){
+C51 COMPILER V9.59.0.0   MAIN                                                              01/18/2024 19:07:12 PAGE 7   
 
- 363   2            if(pos[4] > 4) {return 3;}
- 364   2            bus[0] = C0; bus[1] = C1; bus[2] = C2;
- 365   2            bus[3] = bus[0]|bus[1]<<1|bus[2]<<2;
- 366   2            if (f_debug)
- 367   2              printf(" C0=%d; C1=%d; C2=%d; C210=%d\r\n", bus[0],bus[1],bus[2],bus[3]);
- 368   2            line += (bus[3]+8*pos[4]);
- 369   2            return 0;
- 370   2          }
- 371   1          if(SD1||SD2||SD3||SD4)    //D组检测
- 372   1          {
- 373   2            pos[0] = pos[1] = pos[2] = pos[3] = pos[4]
- 374   2            = bus[0] = bus[1] = bus[2] = bus[3] = 0;
- 375   2            line = 96;
- 376   2            if (f_debug)
- 377   2              printf(" D组判断  line = %d\r\n", line);
- 378   2            pos[0] = SD1;pos[1] = SD2;pos[2] = SD3;pos[3] = SD4;
- 379   2            pos[4] = 15 - (pos[0]|pos[1]<<1|pos[2]<<2|pos[3]<<3);
- 380   2            if (f_debug)
- 381   2              printf(" SD1=%d; SD2=%d; SD3=%d; SD4=%d; SD_group=%d\r\n", pos[0],pos[1],pos[2],pos[3],pos[4]);
- 382   2            if(pos[4] > 4) {return 4;}
- 383   2            bus[0] = D0; bus[1] = D1; bus[2] = D2;
- 384   2            bus[3] = bus[0]|bus[1]<<1|bus[2]<<2;
- 385   2            if (f_debug)
- 386   2            printf(" D0=%d; D1=%d; D2=%d; D210=%d\r\n", bus[0],bus[1],bus[2],bus[3]);
- 387   2            line += (bus[3]+8*pos[4]);
- 388   2            return 0;
- 389   2          }
- 390   1          if(SE1||SE2||SE3)   //E组检测
- 391   1          {
- 392   2            pos[0] = pos[1] = pos[2] = pos[3] = pos[4]
- 393   2            = bus[0] = bus[1] = bus[2] = bus[3] = 0;
- 394   2            line = 128;
- 395   2            if (f_debug)
- 396   2            printf(" E组检测  line = %d\r\n", line);
- 397   2            pos[0] = SE1;pos[1] = SE2;pos[2] = SE3;
- 398   2            pos[4] = 15 - (pos[0]|pos[1]<<1|pos[2]<<2);
- 399   2            if (f_debug)
- 400   2            printf(" SE1=%d; SE2=%d; SE3=%d; SE_group=%d\r\n", pos[0],pos[1],pos[2],pos[4]);
- 401   2            if(pos[4] > 3) {return 5;}
- 402   2            bus[0] = E0; bus[1] = E1; bus[2] = E2;
- 403   2            bus[3] = bus[0]|bus[1]<<1|bus[2]<<2;
- 404   2            if (f_debug)
- 405   2            printf(" E0=%d; E1=%d; E2=%d; E210=%d\r\n", bus[0],bus[1],bus[2],bus[3]);
- 406   2            line += (bus[3]+8*pos[4]);
- 407   2            return 0;
- 408   2          }
- 409   1          return 0;
- 410   1        }
- 411          
- 412            /**
- 413              * @brief  初始化打印
- 414              */
- 415            void Printf_Init(void){
- 416   1          char i;
- 417   1          printf("\r\n");
- 418   1          printf("Loading...\r\n");
- 419   1          for(i=0;i<50;i++)
- 420   1          {
- 421   2            printf("=");
- 422   2            delay_us(50);
- 423   2          }
- 424   1          printf("\r\n");
-C51 COMPILER V9.59.0.0   MAIN                                                              01/17/2024 01:15:55 PAGE 8   
+ 363   4                pos[4]++;
+ 364   4                pos[5] = i+1;
+ 365   4              }
+ 366   3            }
+ 367   2            if(pos[5]!=pos[4]){
+ 368   3              return 3;
+ 369   3            }
+ 370   2            bus[0] = C0; bus[1] = C1; bus[2] = C2;
+ 371   2            bus[3] = bus[0]|bus[1]<<1|bus[2]<<2;
+ 372   2            line += (bus[3]+8*pos[4]);
+ 373   2            return 0;
+ 374   2          }
+ 375   1          
+ 376   1          if(SD1||SD2||SD3||SD4)    //D组检测
+ 377   1          {
+ 378   2            pos[0] = pos[1] = pos[2] = pos[3] = pos[4] = pos[5]
+ 379   2            = bus[0] = bus[1] = bus[2] = bus[3] = 0;
+ 380   2            line = 96;
+ 381   2            pos[0] = SD1;pos[1] = SD2;pos[2] = SD3;pos[3] = SD4;
+ 382   2            for(i=0;i<4;i++){
+ 383   3              if(!pos[i]){
+ 384   4                pos[4]++;
+ 385   4                pos[5] = i+1;
+ 386   4              }
+ 387   3            }
+ 388   2            if(pos[5]!=pos[4]){
+ 389   3              return 4;
+ 390   3            }
+ 391   2            bus[0] = D0; bus[1] = D1; bus[2] = D2;
+ 392   2            bus[3] = bus[0]|bus[1]<<1|bus[2]<<2;
+ 393   2            line += (bus[3]+8*pos[4]);
+ 394   2            return 0;
+ 395   2          }
+ 396   1          
+ 397   1          if(SE1||SE2||SE3)   //E组检测
+ 398   1          {
+ 399   2            pos[0] = pos[1] = pos[2] = pos[3] = pos[4] = pos[5]
+ 400   2            = bus[0] = bus[1] = bus[2] = bus[3] = 0;
+ 401   2            line = 128;
+ 402   2            pos[0] = SE1;pos[1] = SE2;pos[2] = SE3;
+ 403   2          for(i=0;i<3;i++){
+ 404   3              if(!pos[i]){
+ 405   4                pos[4]++;
+ 406   4                pos[5] = i+1;
+ 407   4              }
+ 408   3            }
+ 409   2            if(pos[5]!=pos[4]){
+ 410   3              return 5;
+ 411   3            }
+ 412   2            bus[0] = E0; bus[1] = E1; bus[2] = E2;
+ 413   2            bus[3] = bus[0]|bus[1]<<1|bus[2]<<2;
+ 414   2            line += (bus[3]+8*pos[4]);
+ 415   2            return 0;
+ 416   2          }
+ 417   1          return 0;
+ 418   1        }
+ 419            //Debug任务
+ 420            void Debug_Task(void){
+ 421   1          char i;
+ 422   1          printf("\r\n debug检测内容：\r\n");
+ 423   1          //A
+ 424   1          pos[0] = pos[1] = pos[2] = pos[3] = pos[4] = pos[5]
+C51 COMPILER V9.59.0.0   MAIN                                                              01/18/2024 19:07:12 PAGE 8   
 
- 425   1          printf(" _    _             ___ _           _    \r\n");
- 426   1          printf("| |  (_)_ _  ___   / __| |_  ___ __| |__ \r\n"); 
- 427   1          printf("| |__| | ' \\/ -_) | (__| ' \\/ -_) _| / / \r\n");
- 428   1          printf("|____|_|_||_\\___|  \\___|_||_\\___\\__|_\\_\\ \r\n");
- 429   1          printf("\r\n");
- 430   1          printf("Version:      V1.0.1      \r\n");
- 431   1          printf("Author:       Gsx         \r\n");
- 432   1          printf("芯片信息:     STC15F2K60S2\r\n");
- 433   1          printf("系统主频:     %ld\r\n", FOSC);
- 434   1          printf("波特率:       %d\r\n", UART2_BODE);
- 435   1          printf("输入0x04查看指令帮助      \r\n");
- 436   1        }
- 437            /**
- 438              * @brief  报错打印
- 439              */
- 440            void Err_printf(void){
- 441   1          switch(err)
- 442   1          {
- 443   2            case 1:
- 444   2            {
- 445   3              printf("\r\nError(1): SA1 ~ SA4线出错,已停止检测\r\n");
- 446   3            }break;
- 447   2            case 2:
- 448   2            {
- 449   3              printf("\r\nError(2): SB1 ~ SB4线出错,已停止检测\r\n");
- 450   3            }break;
- 451   2            case 3:
- 452   2            {
- 453   3              printf("\r\nError(3): SC1 ~ SC4线出错,已停止检测\r\n");
- 454   3            }break;
- 455   2            case 4:
- 456   2            {
- 457   3              printf("\r\nError(4): SD1 ~ SD4线出错,已停止检测\r\n");
- 458   3            }break;
- 459   2            case 5:
- 460   2            {
- 461   3              printf("\r\nError(5): SE1 ~ SE3线出错,已停止检测\r\n");
- 462   3            }break;
- 463   2            default:
- 464   2            break;
- 465   2          }
- 466   1        }
- 467          
- 468            /**
- 469              * @brief  初始化任务
- 470              */
- 471            void Init_Task(void){
- 472   1          
- 473   1          Init_uart2(UART2_BODE);
- 474   1          Init_uart1(UART1_BODE);
- 475   1          Printf_Init();
- 476   1        }
- 477          
- 478            /**
- 479              * @brief  打印任务
- 480              */
- 481            void Printf_Task(void){
- 482   1            if(!err){
- 483   2              if(line==-1)
- 484   2              {
- 485   3                printf("\r\n没有线被拉低。\r\n");
- 486   3                report_printf("ff");
-C51 COMPILER V9.59.0.0   MAIN                                                              01/17/2024 01:15:55 PAGE 9   
+ 425   1          = bus[0] = bus[1] = bus[2] = bus[3] = 0;
+ 426   1          printf(" \r\nA组检测\r\n");
+ 427   1          pos[0] = SA1;pos[1] = SA2;pos[2] = SA3;pos[3] = SA4;
+ 428   1          for(i=0;i<4;i++){
+ 429   2              if(!pos[i]){
+ 430   3                pos[4]++;
+ 431   3                pos[5] = i+1;
+ 432   3              }
+ 433   2            }
+ 434   1          printf(" SA1=%d; SA2=%d; SA3=%d; SA4=%d; SA_group=%d; SA_check=%d\r\n", pos[0],pos[1],pos[2],pos[3],pos[
+             -4],pos[5]);
+ 435   1          bus[0] = A0; bus[1] = A1; bus[2] = A2;
+ 436   1          bus[3] = bus[0]|bus[1]<<1|bus[2]<<2;
+ 437   1          printf(" A0=%d; A1=%d; A2=%d; A210=%d\r\n", bus[0],bus[1],bus[2],bus[3]);
+ 438   1          //B
+ 439   1          pos[0] = pos[1] = pos[2] = pos[3] = pos[4] = pos[5]
+ 440   1          = bus[0] = bus[1] = bus[2] = bus[3] = 0;
+ 441   1          printf(" \r\nB组检测\r\n");
+ 442   1          pos[0] = SB1;pos[1] = SB2;pos[2] = SB3;pos[3] = SB4;
+ 443   1          for(i=0;i<4;i++){
+ 444   2              if(!pos[i]){
+ 445   3                pos[4]++;
+ 446   3                pos[5] = i+1;
+ 447   3              }
+ 448   2            }
+ 449   1          printf(" SB1=%d; SB2=%d; SB3=%d; SB4=%d; SB_group=%d; SB_check=%d\r\n", pos[0],pos[1],pos[2],pos[3],pos[
+             -4],pos[5]);
+ 450   1          bus[0] = B0; bus[1] = B1; bus[2] = B2;
+ 451   1          bus[3] = bus[0]|bus[1]<<1|bus[2]<<2;
+ 452   1          printf(" B0=%d; B1=%d; B2=%d; B210=%d\r\n", bus[0],bus[1],bus[2],bus[3]);
+ 453   1          //C
+ 454   1          pos[0] = pos[1] = pos[2] = pos[3] = pos[4] = pos[5]
+ 455   1          = bus[0] = bus[1] = bus[2] = bus[3] = 0;
+ 456   1          printf(" \r\nC组检测\r\n");
+ 457   1          pos[0] = SC1;pos[1] = SC2;pos[2] = SC3;pos[3] = SC4;
+ 458   1          for(i=0;i<4;i++){
+ 459   2              if(!pos[i]){
+ 460   3                pos[4]++;
+ 461   3                pos[5] = i+1;
+ 462   3              }
+ 463   2            }
+ 464   1          printf(" SC1=%d; SC2=%d; SC3=%d; SC4=%d; SC_group=%d; SC_check=%d\r\n", pos[0],pos[1],pos[2],pos[3],pos[
+             -4],pos[5]);
+ 465   1          bus[0] = C0; bus[1] = C1; bus[2] = C2;
+ 466   1          bus[3] = bus[0]|bus[1]<<1|bus[2]<<2;
+ 467   1          printf(" C0=%d; C1=%d; C2=%d; C210=%d\r\n", bus[0],bus[1],bus[2],bus[3]);
+ 468   1          //D
+ 469   1          pos[0] = pos[1] = pos[2] = pos[3] = pos[4] = pos[5]
+ 470   1          = bus[0] = bus[1] = bus[2] = bus[3] = 0;
+ 471   1          printf(" \r\nD组判断\r\n");
+ 472   1          pos[0] = SD1;pos[1] = SD2;pos[2] = SD3;pos[3] = SD4;
+ 473   1          for(i=0;i<4;i++){
+ 474   2              if(!pos[i]){
+ 475   3                pos[4]++;
+ 476   3                pos[5] = i+1;
+ 477   3              }
+ 478   2            }
+ 479   1          printf(" SD1=%d; SD2=%d; SD3=%d; SD4=%d; SD_group=%d; SD_check=%d\r\n", pos[0],pos[1],pos[2],pos[3],pos[
+             -4],pos[5]);
+ 480   1          bus[0] = D0; bus[1] = D1; bus[2] = D2;
+ 481   1          bus[3] = bus[0]|bus[1]<<1|bus[2]<<2;
+ 482   1          printf(" D0=%d; D1=%d; D2=%d; D210=%d\r\n", bus[0],bus[1],bus[2],bus[3]);
+C51 COMPILER V9.59.0.0   MAIN                                                              01/18/2024 19:07:12 PAGE 9   
 
- 487   3              }
- 488   2              else{
- 489   3                printf("\r\n%d线被拉低。\r\n", line);
- 490   3                report_printf("%d",(int)line);    //上报
- 491   3                line = -1;
+ 483   1          //E
+ 484   1          pos[0] = pos[1] = pos[2] = pos[3] = pos[4] = pos[5]
+ 485   1          = bus[0] = bus[1] = bus[2] = bus[3] = 0;
+ 486   1          printf(" \r\nE组检测\r\n");
+ 487   1          pos[0] = SE1;pos[1] = SE2;pos[2] = SE3;
+ 488   1          for(i=0;i<3;i++){
+ 489   2              if(!pos[i]){
+ 490   3                pos[4]++;
+ 491   3                pos[5] = i+1;
  492   3              }
- 493   2            }else
- 494   1            {
- 495   2              Err_printf();
- 496   2              report_printf("ff%d", (int)err);
- 497   2            }
+ 493   2            }
+ 494   1          printf(" SE1=%d; SE2=%d; SE3=%d; SE_group=%d; SE_check=%d\r\n", pos[0],pos[1],pos[2],pos[4],pos[5]);
+ 495   1          bus[0] = E0; bus[1] = E1; bus[2] = E2;
+ 496   1          bus[3] = bus[0]|bus[1]<<1|bus[2]<<2;
+ 497   1          printf(" E0=%d; E1=%d; E2=%d; E210=%d\r\n", bus[0],bus[1],bus[2],bus[3]);
  498   1        }
  499            
- 500            void main(void)
- 501            {
- 502   1          Init_Task();
- 503   1          while (1)
- 504   1          { 
- 505   2            if(cmd!=BOOT)
- 506   2            {
- 507   3              switch (cmd)
- 508   3              {
- 509   4                case STEP:
- 510   4                {
- 511   5                  cmd = BOOT;
- 512   5                  err_last = err;
- 513   5                  err = Check_Task();
- 514   5                  Printf_Task();
- 515   5                }
- 516   4                break;
- 517   4                case ROLL:
- 518   4                {
- 519   5                  err_last = err;
- 520   5                  err = Check_Task();
- 521   5                  Printf_Task();
- 522   5                }
- 523   4                break;
- 524   4                case DEBUG:
- 525   4                {
- 526   5                  f_debug = ~f_debug;
- 527   5                  if(f_debug)printf("\r\nDEBUG已开启\r\n");
- 528   5                  else printf("\r\nDEBUG已关闭\r\n");
- 529   5                  cmd = cmd_last;
- 530   5                }
- 531   4                break;
- 532   4                case HELP:
- 533   4                {
- 534   5                  printf("\r\n");
- 535   5                  printf("*============ CMD LIST ============*\r\n");
- 536   5                  printf(" 0x00----------BOOT停止指令         \r\n");
- 537   5                  printf(" 0x01----------STEEP单步测试指令    \r\n");
- 538   5                  printf(" 0x02----------ROLL滚动测试指令     \r\n");
- 539   5                  printf(" 0x03----------DEBUG开关debug指令   \r\n");
- 540   5                  printf(" 0x04----------HELP指令列表         \r\n");
- 541   5                  printf(" 0x05----------REBOOT重启           \r\n");
- 542   5                  printf(" 0x06----------AUTO自动检测         \r\n");
- 543   5                  cmd = BOOT;
- 544   5                }
- 545   4                break;
- 546   4                case REBOOT:
- 547   4                {
- 548   5                  pos[0] = pos[1] = pos[2] = pos[3] = pos[4]
-C51 COMPILER V9.59.0.0   MAIN                                                              01/17/2024 01:15:55 PAGE 10  
+ 500            /**
+ 501              * @brief  初始化打印
+ 502              */
+ 503            void Printf_Init(void){
+ 504   1          char i;
+ 505   1          printf("\r\n");
+ 506   1          printf("Loading...\r\n");
+ 507   1          for(i=0;i<50;i++)
+ 508   1          {
+ 509   2            printf("=");
+ 510   2            delay_us(50);
+ 511   2          }
+ 512   1          printf("\r\n");
+ 513   1          printf(" _    _             ___ _           _    \r\n");
+ 514   1          printf("| |  (_)_ _  ___   / __| |_  ___ __| |__ \r\n"); 
+ 515   1          printf("| |__| | ' \\/ -_) | (__| ' \\/ -_) _| / / \r\n");
+ 516   1          printf("|____|_|_||_\\___|  \\___|_||_\\___\\__|_\\_\\ \r\n");
+ 517   1          printf("\r\n");
+ 518   1          printf("Version:      V1.0.1      \r\n");
+ 519   1          printf("Author:       Gsx         \r\n");
+ 520   1          printf("芯片信息:     STC15F2K60S2\r\n");
+ 521   1          printf("系统主频:     %ld\r\n", FOSC);
+ 522   1          printf("波特率:       %d\r\n", UART2_BODE);
+ 523   1          printf("输入0x04查看指令帮助      \r\n");
+ 524   1          printf("当前模式：BOOT\r\n");
+ 525   1        }
+ 526            /**
+ 527              * @brief  报错打印
+ 528              */
+ 529            void Err_printf(void){
+ 530   1          switch(err)
+ 531   1          {
+ 532   2            case 1:
+ 533   2            {
+ 534   3              printf("\r\nError(1): SA1 ~ SA4线出错\r\n");
+ 535   3              printf(" SA1=%d; SA2=%d; SA3=%d; SA4=%d; SA_group=%d; SA_check=%d\r\n", pos[0],pos[1],pos[2],pos[3],po
+             -s[4],pos[5]);
+ 536   3              
+ 537   3            }break;
+ 538   2            case 2:
+ 539   2            {
+ 540   3              printf("\r\nError(2): SB1 ~ SB4线出错,已停止检测\r\n");
+ 541   3              printf(" SB1=%d; SB2=%d; SB3=%d; SB4=%d; SB_group=%d; SB_check=%d\r\n", pos[0],pos[1],pos[2],pos[3],po
+             -s[4],pos[5]);
+ 542   3            }break;
+C51 COMPILER V9.59.0.0   MAIN                                                              01/18/2024 19:07:12 PAGE 10  
 
- 549   5                  = bus[0] = bus[1] = bus[2] = bus[3] = 0;
- 550   5                  line = 0;
- 551   5                  Printf_Init();
- 552   5                  cmd = BOOT;
- 553   5                }
- 554   4                break;
- 555   4                case AUTO:
- 556   4                {
- 557   5                  err_last = err;
- 558   5                  err = Check_Task();
- 559   5                  
- 560   5                  if(err_last!=err || line_last!= line)
- 561   5                  {
- 562   6                    Printf_Task();
- 563   6                  }
- 564   5                }
- 565   4                break;
- 566   4                default:
- 567   4                  break;
- 568   4              }
- 569   3            }
- 570   2            
- 571   2          }
- 572   1        }
+ 543   2            case 3:
+ 544   2            {
+ 545   3              printf("\r\nError(3): SC1 ~ SC4线出错,已停止检测\r\n");
+ 546   3              printf(" SC1=%d; SC2=%d; SC3=%d; SC4=%d; SC_group=%d; SC_check=%d\r\n", pos[0],pos[1],pos[2],pos[3],po
+             -s[4],pos[5]);
+ 547   3            }break;
+ 548   2            case 4:
+ 549   2            {
+ 550   3              printf("\r\nError(4): SD1 ~ SD4线出错,已停止检测\r\n");
+ 551   3              printf(" SD1=%d; SD2=%d; SD3=%d; SD4=%d; SD_group=%d; SD_check=%d\r\n", pos[0],pos[1],pos[2],pos[3],po
+             -s[4],pos[5]);
+ 552   3            }break;
+ 553   2            case 5:
+ 554   2            {
+ 555   3              printf("\r\nError(5): SE1 ~ SE3线出错,已停止检测\r\n");
+ 556   3              printf(" SE1=%d; SE2=%d; SE3=%d; SE_group=%d; SE_check=%d\r\n", pos[0],pos[1],pos[2],pos[4],pos[5]);
+ 557   3            }break;
+ 558   2            default:
+ 559   2            break;
+ 560   2          }
+ 561   1        }
+ 562            
+ 563            void IO_Config(void)
+ 564            {
+ 565   1          P0M0 = 0xFF;
+ 566   1          P0M1 = 0xFF;
+ 567   1          P1M0 = 0x8C;
+ 568   1          P1M1 = 0x8C;
+ 569   1          P2M0 = 0xFF;
+ 570   1          P2M1 = 0xFF;
+ 571   1          P3M0 = 0xFC;
+ 572   1          P3M1 = 0xFC;
+ 573   1          P4M0 = 0xFF;
+ 574   1          P4M1 = 0xFF;
+ 575   1          P5M0 = 0x10;
+ 576   1          P5M1 = 0x10;
+ 577   1          P6M0 = 0x00;
+ 578   1          P6M1 = 0x00;
+ 579   1          P7M0 = 0x00;
+ 580   1          P7M1 = 0x00;
+ 581   1        }
+ 582            
+ 583            /**
+ 584              * @brief  初始化任务
+ 585              */
+ 586            void Init_Task(void){
+ 587   1          IO_Config();
+ 588   1          Init_uart2(UART2_BODE);
+ 589   1          Init_uart1(UART1_BODE);
+ 590   1          Printf_Init();
+ 591   1        }
+ 592          
+ 593            /**
+ 594              * @brief  打印任务
+ 595              */
+ 596            void Printf_Task(void){
+ 597   1            if(!err){
+ 598   2              if(line==-1)
+ 599   2              {
+ 600   3                printf("\r\n没有线被拉低。\r\n");
+ 601   3                report_printf("0000\r\n");
+ 602   3              }
+C51 COMPILER V9.59.0.0   MAIN                                                              01/18/2024 19:07:12 PAGE 11  
+
+ 603   2              else{
+ 604   3                printf("\r\n%d线被拉低。\r\n", (line+1));
+ 605   3                report_printf("%d\r\n",(int)(line+1));    //上报
+ 606   3                line = -1;
+ 607   3              }
+ 608   2            }else
+ 609   1            {
+ 610   2              Err_printf();
+ 611   2              err = 0;
+ 612   2              report_printf("1111%d\r\n", (int)err);
+ 613   2            }
+ 614   1        }
+ 615            
+ 616            void main(void)
+ 617            {
+ 618   1          Init_Task();
+ 619   1          while (1)
+ 620   1          { 
+ 621   2            if(cmd!=BOOT)
+ 622   2            {
+ 623   3              switch (cmd)
+ 624   3              {
+ 625   4                case STEP:
+ 626   4                {
+ 627   5                  cmd = BOOT;
+ 628   5                  err_last = err;
+ 629   5                  err = Check_Task();
+ 630   5                  Printf_Task();
+ 631   5                }
+ 632   4                break;
+ 633   4                case ROLL:
+ 634   4                {
+ 635   5                  err_last = err;
+ 636   5                  err = Check_Task();
+ 637   5                  Printf_Task();
+ 638   5                }
+ 639   4                break;
+ 640   4                case DEBUG:
+ 641   4                {
+ 642   5                  Debug_Task();
+ 643   5                  cmd = BOOT;
+ 644   5                }
+ 645   4                break;
+ 646   4                case HELP:
+ 647   4                {
+ 648   5                  printf("\r\n");
+ 649   5                  printf("*============ CMD LIST ============*\r\n");
+ 650   5                  printf(" 0x00----------BOOT停止指令         \r\n");
+ 651   5                  printf(" 0x01----------STEP单步测试指令    \r\n");
+ 652   5                  printf(" 0x02----------ROLL滚动测试指令     \r\n");
+ 653   5                  printf(" 0x03----------DEBUG开关debug指令   \r\n");
+ 654   5                  printf(" 0x04----------HELP指令列表         \r\n");
+ 655   5                  printf(" 0x05----------REBOOT重启           \r\n");
+ 656   5                  printf(" 0x06----------AUTO自动检测         \r\n");
+ 657   5                  printf(" 当前模式：BOOT\r\n");
+ 658   5                  cmd = BOOT;
+ 659   5                }
+ 660   4                break;
+ 661   4                case REBOOT:
+ 662   4                {
+ 663   5                  pos[0] = pos[1] = pos[2] = pos[3] = pos[4]
+ 664   5                  = bus[0] = bus[1] = bus[2] = bus[3] = 0;
+C51 COMPILER V9.59.0.0   MAIN                                                              01/18/2024 19:07:12 PAGE 12  
+
+ 665   5                  line = 0;
+ 666   5                  Printf_Init();
+ 667   5                  cmd = BOOT;
+ 668   5                }
+ 669   4                break;
+ 670   4                case AUTO:
+ 671   4                {
+ 672   5                  err_last = err;
+ 673   5                  err = Check_Task();
+ 674   5                  
+ 675   5                  if(err_last!=err || line_last!= line)
+ 676   5                  {
+ 677   6                    Printf_Task();
+ 678   6                  }
+ 679   5                }
+ 680   4                break;
+ 681   4                default:
+ 682   4                  break;
+ 683   4              }
+ 684   3            }
+ 685   2                delay_ms(50);
+ 686   2          }
+ 687   1      
+ 688   1        }
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =   2738    ----
-   CONSTANT SIZE    =   1454    ----
+   CODE SIZE        =   3800    ----
+   CONSTANT SIZE    =   1475    ----
    XDATA SIZE       =   ----      20
    PDATA SIZE       =   ----    ----
-   DATA SIZE        =     26      32
+   DATA SIZE        =     28      32
    IDATA SIZE       =   ----    ----
-   BIT SIZE         =      3    ----
+   BIT SIZE         =      2    ----
 END OF MODULE INFORMATION.
 
 

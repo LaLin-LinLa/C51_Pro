@@ -2,7 +2,8 @@
 	#include <stdio.h>
 	#include <stdarg.h>
 	#include <intrins.h>
-
+ 
+	
 	/*总线矩阵检测*/
 	sbit SA1 = P3^5;
 	sbit SA2 = P3^6;
@@ -30,7 +31,7 @@
 
 	sbit A0  = P5^4;
 	sbit A1  = P1^7;
-	sbit A2  = P5^5;
+	sbit A2  = P3^4;
 
 	sbit B0  = P3^2;
 	sbit B1  = P4^0;
@@ -85,13 +86,12 @@
   
 	static unsigned char err  = 0;
 	static unsigned char err_last  = 0;
-	static bit f_debug = 0;
 	static bit tx1_busy = 0;
 	static bit tx2_busy = 0;
 	int line = -1;
 	int line_last = -1;
 	int bus[4];		
-	int pos[5];
+	int pos[6];
 	unsigned char cmd = ROLL;
 	unsigned char cmd_last = ROLL;
 
@@ -302,113 +302,201 @@
 				tx2_busy = 0;           //清发送忙标志
 		}
 	}
-
 	/**
 		* @brief  线束检测任务
 		* @retval 0: 检测完成  其他：错误
 		*/
 	unsigned char Check_Task(void){
+		char i;
 		line_last = line;
 		if(SA1||SA2||SA3||SA4)				//A组检测
 		{
-			pos[0] = pos[1] = pos[2] = pos[3] = pos[4]
+			pos[0] = pos[1] = pos[2] = pos[3] = pos[4] = pos[5]
 			= bus[0] = bus[1] = bus[2] = bus[3] = 0;
 			line = 0;
-			if (f_debug){
-				printf("\r\n debug检测内容：\r\n");
-				printf(" A组检测  line = %d\r\n", line);}
-			pos[0] = SA1;pos[1] = SA2;pos[2] = SA3;pos[3] = SA4;
-			pos[4] = 15 - (pos[0]|pos[1]<<1|pos[2]<<2|pos[3]<<3);
-			if (f_debug)
-				printf(" SA1=%d; SA2=%d; SA3=%d; SA4=%d; SA_group=%d\r\n", pos[0],pos[1],pos[2],pos[3],pos[4]);
-			if(pos[4] > 4) {return 1;}
+			pos[0] = SA1;pos[1] = SA2;pos[2] = SA3;pos[3] = SA4;	
+			
+			for(i=0;i<4;i++){
+				if(!pos[i]){
+					pos[4]++;
+					pos[5] = i+1;
+				}
+			}
+			if(pos[5]!=pos[4]){
+				return 1;
+			}
 			bus[0] = A0; bus[1] = A1; bus[2] = A2;
 			bus[3] = bus[0]|bus[1]<<1|bus[2]<<2;
-			if (f_debug)
-				printf(" A0=%d; A1=%d; A2=%d; A210=%d\r\n", bus[0],bus[1],bus[2],bus[3]);
-			
 			line += (bus[3]+8*pos[4]);
 			return 0;
 		}
+		
 		if(SB1||SB2||SB3||SB4)		//B组检测
 		{
-			pos[0] = pos[1] = pos[2] = pos[3] = pos[4]
+			pos[0] = pos[1] = pos[2] = pos[3] = pos[4] = pos[5]
 			= bus[0] = bus[1] = bus[2] = bus[3] = 0;
 			line = 32;
-			if (f_debug)
-				printf(" B组检测  line = %d\r\n", line);	
 			pos[0] = SB1;pos[1] = SB2;pos[2] = SB3;pos[3] = SB4;
-			pos[4] = 15 - (pos[0]|pos[1]<<1|pos[2]<<2|pos[3]<<3);
-			if (f_debug)
-				printf(" SB1=%d; SB2=%d; SB3=%d; SB4=%d; SB_group=%d\r\n", pos[0],pos[1],pos[2],pos[3],pos[4]);
-			if(pos[4] > 4) {return 2;}
+			for(i=0;i<4;i++){
+				if(!pos[i]){
+					pos[4]++;
+					pos[5] = i+1;
+				}
+			}
+			if(pos[5]!=pos[4]){
+				return 2;
+			}
 			bus[0] = B0; bus[1] = B1; bus[2] = B2;
 			bus[3] = bus[0]|bus[1]<<1|bus[2]<<2;
-			if (f_debug)
-				printf(" B0=%d; B1=%d; B2=%d; B210=%d\r\n", bus[0],bus[1],bus[2],bus[3]);
 			line += (bus[3]+8*pos[4]);
 			return 0;
 		}
+		
 		if(SC1||SC2||SC3||SC4)		//C组检测
 		{
-			pos[0] = pos[1] = pos[2] = pos[3] = pos[4]
+			pos[0] = pos[1] = pos[2] = pos[3] = pos[4] = pos[5]
 			= bus[0] = bus[1] = bus[2] = bus[3] = 0;
 			line = 64;
-			if (f_debug)
-				printf(" C组检测  line = %d\r\n", line);
 			pos[0] = SC1;pos[1] = SC2;pos[2] = SC3;pos[3] = SC4;
-			pos[4] = 15 - (pos[0]|pos[1]<<1|pos[2]<<2|pos[3]<<3);
-			if (f_debug)
-				printf(" SC1=%d; SC2=%d; SC3=%d; SC4=%d; SC_group=%d\r\n", pos[0],pos[1],pos[2],pos[3],pos[4]);
-			if(pos[4] > 4) {return 3;}
+			for(i=0;i<4;i++){
+				if(!pos[i]){
+					pos[4]++;
+					pos[5] = i+1;
+				}
+			}
+			if(pos[5]!=pos[4]){
+				return 3;
+			}
 			bus[0] = C0; bus[1] = C1; bus[2] = C2;
 			bus[3] = bus[0]|bus[1]<<1|bus[2]<<2;
-			if (f_debug)
-				printf(" C0=%d; C1=%d; C2=%d; C210=%d\r\n", bus[0],bus[1],bus[2],bus[3]);
 			line += (bus[3]+8*pos[4]);
 			return 0;
 		}
+		
 		if(SD1||SD2||SD3||SD4)		//D组检测
 		{
-			pos[0] = pos[1] = pos[2] = pos[3] = pos[4]
+			pos[0] = pos[1] = pos[2] = pos[3] = pos[4] = pos[5]
 			= bus[0] = bus[1] = bus[2] = bus[3] = 0;
 			line = 96;
-			if (f_debug)
-				printf(" D组判断  line = %d\r\n", line);
 			pos[0] = SD1;pos[1] = SD2;pos[2] = SD3;pos[3] = SD4;
-			pos[4] = 15 - (pos[0]|pos[1]<<1|pos[2]<<2|pos[3]<<3);
-			if (f_debug)
-				printf(" SD1=%d; SD2=%d; SD3=%d; SD4=%d; SD_group=%d\r\n", pos[0],pos[1],pos[2],pos[3],pos[4]);
-			if(pos[4] > 4) {return 4;}
+			for(i=0;i<4;i++){
+				if(!pos[i]){
+					pos[4]++;
+					pos[5] = i+1;
+				}
+			}
+			if(pos[5]!=pos[4]){
+				return 4;
+			}
 			bus[0] = D0; bus[1] = D1; bus[2] = D2;
 			bus[3] = bus[0]|bus[1]<<1|bus[2]<<2;
-			if (f_debug)
-			printf(" D0=%d; D1=%d; D2=%d; D210=%d\r\n", bus[0],bus[1],bus[2],bus[3]);
 			line += (bus[3]+8*pos[4]);
 			return 0;
 		}
+		
 		if(SE1||SE2||SE3)		//E组检测
 		{
-			pos[0] = pos[1] = pos[2] = pos[3] = pos[4]
+			pos[0] = pos[1] = pos[2] = pos[3] = pos[4] = pos[5]
 			= bus[0] = bus[1] = bus[2] = bus[3] = 0;
 			line = 128;
-			if (f_debug)
-			printf(" E组检测  line = %d\r\n", line);
 			pos[0] = SE1;pos[1] = SE2;pos[2] = SE3;
-			pos[4] = 15 - (pos[0]|pos[1]<<1|pos[2]<<2);
-			if (f_debug)
-			printf(" SE1=%d; SE2=%d; SE3=%d; SE_group=%d\r\n", pos[0],pos[1],pos[2],pos[4]);
-			if(pos[4] > 3) {return 5;}
+		for(i=0;i<3;i++){
+				if(!pos[i]){
+					pos[4]++;
+					pos[5] = i+1;
+				}
+			}
+			if(pos[5]!=pos[4]){
+				return 5;
+			}
 			bus[0] = E0; bus[1] = E1; bus[2] = E2;
 			bus[3] = bus[0]|bus[1]<<1|bus[2]<<2;
-			if (f_debug)
-			printf(" E0=%d; E1=%d; E2=%d; E210=%d\r\n", bus[0],bus[1],bus[2],bus[3]);
 			line += (bus[3]+8*pos[4]);
 			return 0;
 		}
 		return 0;
 	}
-
+	//Debug任务
+	void Debug_Task(void){
+		char i;
+		printf("\r\n debug检测内容：\r\n");
+		//A
+		pos[0] = pos[1] = pos[2] = pos[3] = pos[4] = pos[5]
+		= bus[0] = bus[1] = bus[2] = bus[3] = 0;
+		printf(" \r\nA组检测\r\n");
+		pos[0] = SA1;pos[1] = SA2;pos[2] = SA3;pos[3] = SA4;
+		for(i=0;i<4;i++){
+				if(!pos[i]){
+					pos[4]++;
+					pos[5] = i+1;
+				}
+			}
+		printf(" SA1=%d; SA2=%d; SA3=%d; SA4=%d; SA_group=%d; SA_check=%d\r\n", pos[0],pos[1],pos[2],pos[3],pos[4],pos[5]);
+		bus[0] = A0; bus[1] = A1; bus[2] = A2;
+		bus[3] = bus[0]|bus[1]<<1|bus[2]<<2;
+		printf(" A0=%d; A1=%d; A2=%d; A210=%d\r\n", bus[0],bus[1],bus[2],bus[3]);
+		//B
+		pos[0] = pos[1] = pos[2] = pos[3] = pos[4] = pos[5]
+		= bus[0] = bus[1] = bus[2] = bus[3] = 0;
+		printf(" \r\nB组检测\r\n");
+		pos[0] = SB1;pos[1] = SB2;pos[2] = SB3;pos[3] = SB4;
+		for(i=0;i<4;i++){
+				if(!pos[i]){
+					pos[4]++;
+					pos[5] = i+1;
+				}
+			}
+		printf(" SB1=%d; SB2=%d; SB3=%d; SB4=%d; SB_group=%d; SB_check=%d\r\n", pos[0],pos[1],pos[2],pos[3],pos[4],pos[5]);
+		bus[0] = B0; bus[1] = B1; bus[2] = B2;
+		bus[3] = bus[0]|bus[1]<<1|bus[2]<<2;
+		printf(" B0=%d; B1=%d; B2=%d; B210=%d\r\n", bus[0],bus[1],bus[2],bus[3]);
+		//C
+		pos[0] = pos[1] = pos[2] = pos[3] = pos[4] = pos[5]
+		= bus[0] = bus[1] = bus[2] = bus[3] = 0;
+		printf(" \r\nC组检测\r\n");
+		pos[0] = SC1;pos[1] = SC2;pos[2] = SC3;pos[3] = SC4;
+		for(i=0;i<4;i++){
+				if(!pos[i]){
+					pos[4]++;
+					pos[5] = i+1;
+				}
+			}
+		printf(" SC1=%d; SC2=%d; SC3=%d; SC4=%d; SC_group=%d; SC_check=%d\r\n", pos[0],pos[1],pos[2],pos[3],pos[4],pos[5]);
+		bus[0] = C0; bus[1] = C1; bus[2] = C2;
+		bus[3] = bus[0]|bus[1]<<1|bus[2]<<2;
+		printf(" C0=%d; C1=%d; C2=%d; C210=%d\r\n", bus[0],bus[1],bus[2],bus[3]);
+		//D
+		pos[0] = pos[1] = pos[2] = pos[3] = pos[4] = pos[5]
+		= bus[0] = bus[1] = bus[2] = bus[3] = 0;
+		printf(" \r\nD组判断\r\n");
+		pos[0] = SD1;pos[1] = SD2;pos[2] = SD3;pos[3] = SD4;
+		for(i=0;i<4;i++){
+				if(!pos[i]){
+					pos[4]++;
+					pos[5] = i+1;
+				}
+			}
+		printf(" SD1=%d; SD2=%d; SD3=%d; SD4=%d; SD_group=%d; SD_check=%d\r\n", pos[0],pos[1],pos[2],pos[3],pos[4],pos[5]);
+		bus[0] = D0; bus[1] = D1; bus[2] = D2;
+		bus[3] = bus[0]|bus[1]<<1|bus[2]<<2;
+		printf(" D0=%d; D1=%d; D2=%d; D210=%d\r\n", bus[0],bus[1],bus[2],bus[3]);
+		//E
+		pos[0] = pos[1] = pos[2] = pos[3] = pos[4] = pos[5]
+		= bus[0] = bus[1] = bus[2] = bus[3] = 0;
+		printf(" \r\nE组检测\r\n");
+		pos[0] = SE1;pos[1] = SE2;pos[2] = SE3;
+		for(i=0;i<3;i++){
+				if(!pos[i]){
+					pos[4]++;
+					pos[5] = i+1;
+				}
+			}
+		printf(" SE1=%d; SE2=%d; SE3=%d; SE_group=%d; SE_check=%d\r\n", pos[0],pos[1],pos[2],pos[4],pos[5]);
+		bus[0] = E0; bus[1] = E1; bus[2] = E2;
+		bus[3] = bus[0]|bus[1]<<1|bus[2]<<2;
+		printf(" E0=%d; E1=%d; E2=%d; E210=%d\r\n", bus[0],bus[1],bus[2],bus[3]);
+	}
+	
 	/**
 		* @brief  初始化打印
 		*/
@@ -433,6 +521,7 @@
 		printf("系统主频:     %ld\r\n", FOSC);
 		printf("波特率:    	  %d\r\n", UART2_BODE);
 		printf("输入0x04查看指令帮助      \r\n");
+		printf("当前模式：BOOT\r\n");
 	}
 	/**
 		* @brief  报错打印
@@ -442,34 +531,60 @@
 		{
 			case 1:
 			{
-				printf("\r\nError(1): SA1 ~ SA4线出错,已停止检测\r\n");
+				printf("\r\nError(1): SA1 ~ SA4线出错\r\n");
+				printf(" SA1=%d; SA2=%d; SA3=%d; SA4=%d; SA_group=%d; SA_check=%d\r\n", pos[0],pos[1],pos[2],pos[3],pos[4],pos[5]);
+				
 			}break;
 			case 2:
 			{
 				printf("\r\nError(2): SB1 ~ SB4线出错,已停止检测\r\n");
+				printf(" SB1=%d; SB2=%d; SB3=%d; SB4=%d; SB_group=%d; SB_check=%d\r\n", pos[0],pos[1],pos[2],pos[3],pos[4],pos[5]);
 			}break;
 			case 3:
 			{
 				printf("\r\nError(3): SC1 ~ SC4线出错,已停止检测\r\n");
+				printf(" SC1=%d; SC2=%d; SC3=%d; SC4=%d; SC_group=%d; SC_check=%d\r\n", pos[0],pos[1],pos[2],pos[3],pos[4],pos[5]);
 			}break;
 			case 4:
 			{
 				printf("\r\nError(4): SD1 ~ SD4线出错,已停止检测\r\n");
+				printf(" SD1=%d; SD2=%d; SD3=%d; SD4=%d; SD_group=%d; SD_check=%d\r\n", pos[0],pos[1],pos[2],pos[3],pos[4],pos[5]);
 			}break;
 			case 5:
 			{
 				printf("\r\nError(5): SE1 ~ SE3线出错,已停止检测\r\n");
+				printf(" SE1=%d; SE2=%d; SE3=%d; SE_group=%d; SE_check=%d\r\n", pos[0],pos[1],pos[2],pos[4],pos[5]);
 			}break;
 			default:
 			break;
 		}
 	}
-
+	
+	void IO_Config(void)
+	{
+		P0M0 = 0xFF;
+    P0M1 = 0xFF;
+    P1M0 = 0x8C;
+    P1M1 = 0x8C;
+    P2M0 = 0xFF;
+    P2M1 = 0xFF;
+    P3M0 = 0xFC;
+    P3M1 = 0xFC;
+    P4M0 = 0xFF;
+    P4M1 = 0xFF;
+    P5M0 = 0x10;
+    P5M1 = 0x10;
+    P6M0 = 0x00;
+    P6M1 = 0x00;
+    P7M0 = 0x00;
+    P7M1 = 0x00;
+	}
+	
 	/**
 		* @brief  初始化任务
 		*/
 	void Init_Task(void){
-		
+		IO_Config();
 		Init_uart2(UART2_BODE);
 		Init_uart1(UART1_BODE);
 		Printf_Init();
@@ -483,17 +598,18 @@
 				if(line==-1)
 				{
 					printf("\r\n没有线被拉低。\r\n");
-					report_printf("ff");
+					report_printf("0000\r\n");
 				}
 				else{
-					printf("\r\n%d线被拉低。\r\n", line);
-					report_printf("%d",(int)line);		//上报
+					printf("\r\n%d线被拉低。\r\n", (line+1));
+					report_printf("%d\r\n",(int)(line+1));		//上报
 					line = -1;
 				}
 			}else
 			{
 				Err_printf();
-				report_printf("ff%d", (int)err);
+				err = 0;
+				report_printf("1111%d\r\n", (int)err);
 			}
 	}
 	
@@ -523,10 +639,8 @@
 					break;
 					case DEBUG:
 					{
-						f_debug = ~f_debug;
-						if(f_debug)printf("\r\nDEBUG已开启\r\n");
-						else printf("\r\nDEBUG已关闭\r\n");
-						cmd = cmd_last;
+						Debug_Task();
+						cmd = BOOT;
 					}
 					break;
 					case HELP:
@@ -534,12 +648,13 @@
 						printf("\r\n");
 						printf("*============ CMD LIST ============*\r\n");
 						printf(" 0x00----------BOOT停止指令         \r\n");
-						printf(" 0x01----------STEEP单步测试指令    \r\n");
+						printf(" 0x01----------STEP单步测试指令    \r\n");
 						printf(" 0x02----------ROLL滚动测试指令     \r\n");
 						printf(" 0x03----------DEBUG开关debug指令   \r\n");
 						printf(" 0x04----------HELP指令列表         \r\n");
 						printf(" 0x05----------REBOOT重启         	\r\n");
 						printf(" 0x06----------AUTO自动检测        	\r\n");
+						printf(" 当前模式：BOOT\r\n");
 						cmd = BOOT;
 					}
 					break;
@@ -567,6 +682,7 @@
 						break;
 				}
 			}
-			
+					delay_ms(50);
 		}
+
 	}
